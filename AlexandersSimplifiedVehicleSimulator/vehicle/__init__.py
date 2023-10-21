@@ -1,2 +1,2 @@
-from .otter import Otter
-from .vehicle import Vehicle
+from vehicle.otter import Otter
+from vehicle.vehicle import Vehicle
