@@ -10,8 +10,8 @@ from gymnasium import spaces
 import numpy as np
 import pygame
 
-from .vehicle import Vehicle
-from AlexandersSimplifiedVehicleSimulator.utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat
+from vehicle import Vehicle
+from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat
 
 
 class Otter(Vehicle):

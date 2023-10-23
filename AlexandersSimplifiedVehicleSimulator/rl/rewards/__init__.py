@@ -1,1 +1,1 @@
-from AlexandersSimplifiedVehicleSimulator.rl.rewards.rewards import norm
+from .rewards import norm

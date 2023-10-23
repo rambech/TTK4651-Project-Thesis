@@ -1,2 +1,2 @@
-from AlexandersSimplifiedVehicleSimulator.utils.utils import *
-from AlexandersSimplifiedVehicleSimulator.utils.geometries import *
+from .utils import *
+from .geometries import *
