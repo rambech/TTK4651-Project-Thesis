@@ -18,7 +18,7 @@ from rl.rewards import norm
 # Environment parameters
 BOX_WIDTH = 500                 # [m]   Overall box width
 BOX_LENGTH = 500                # [m]   Overall box length
-dt = 0.1                        # [s]   Sample time
+dt = 0.02                       # [s]   Sample time
 FPS = 1/dt                      # [fps] Frames per second
 QUAY_WIDTH = 100                # [m]
 QUAY_LENGTH = 10                # [m]
@@ -58,7 +58,7 @@ class SimpleEnv(gym.Env):
         "render_fps": FPS,
     }
 
-    def __init__(self, vehicle: Otter, seed=None, eta_d=np.zeros((3, 1), float), docked_threshold=[1, 10]) -> None:
+    def __init__(self, vehicle: Otter, map: SimpleMap, seed=None, eta_d=np.zeros((3, 1), float), docked_threshold=[1, 10]) -> None:
         super(SimpleEnv, self).__init__()
         # Action space is given through super init
         self.eta_max = np.array([N_max, E_max, vehicle.limits["psi_max"]])
