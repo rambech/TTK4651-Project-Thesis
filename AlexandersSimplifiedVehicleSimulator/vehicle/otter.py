@@ -197,11 +197,12 @@ class Otter(Vehicle):
         B = self.k_pos * np.array([[1, 1], [-self.l1, -self.l2]])
         self.Binv = np.linalg.inv(B)
 
-    def step(self, eta, nu, prev_u, eta_d, beta_c, V_c):
+    def step(self, eta, nu, prev_u, nu_d, beta_c, V_c):
         """
         Normal step method for simulation
         """
-        u_control = np.zeros((2, 1))
+        tau = self.PID()
+        u_control = self.unconstrained_allocation(tau)
         nu, u = self.rl_step(eta, nu, prev_u, u_control, beta_c, V_c)
 
         return nu, u
@@ -296,10 +297,22 @@ class Otter(Vehicle):
 
         return nu, u
 
-    def render_update(self, eta: np.ndarray):
+    def render_update(self, eta: np.ndarray, offset: tuple[float, float]):
         rotated_image = pygame.transform.rotate(
-            self.vessel_image, self.eta[-1])
+            self.vessel_image, self.eta[-1])  # TODO: Is this right?
         shape = rotated_image.get_rect()
-        shape.center = tuple(eta[0:2].tolist)
+        shape.center = tuple(eta[0:2].tolist) + offset
 
         return rotated_image, shape
+
+    def PID(self, nu, nu_d, nu_err, nu_dot, nu_int):
+        K_p = np.array([10, ])
+        K_i = np.array[[]]
+        # TODO: make a velocity PID-controller
+        nu_err = nu - nu_d
+        a_b = nu_dot - K_p @ nu_err - K_i @ nu_int
+
+    def unconstrained_allocation(self, tau) -> np.ndarray:
+        u_control = self.Binv @ tau
+
+        return u_control
