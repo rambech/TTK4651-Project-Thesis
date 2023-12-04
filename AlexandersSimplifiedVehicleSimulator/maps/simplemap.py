@@ -31,8 +31,8 @@ class SimpleMap(Map):
     quay = SimpleQuay(QUAY_WIDTH, QUAY_LENGTH, (QUAY_X_POS, QUAY_Y_POS))
 
     # Weather
-    SIDESLIP = 30           # [deg]
-    CURRENT_MAGNITUDE = 3   # [0]
+    SIDESLIP = 0  # 30           # [deg]
+    CURRENT_MAGNITUDE = 0  # 3   # [0]
 
     def __init__(self) -> None:
         super(SimpleMap, self).__init__()
@@ -64,4 +64,4 @@ def test_map():
     pygame.quit()
 
 
-test_map()
+# test_map()

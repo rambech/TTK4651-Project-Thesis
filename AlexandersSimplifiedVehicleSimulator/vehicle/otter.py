@@ -1,9 +1,14 @@
 """
 Otter vehicle model
 This is Thor Inge Fossen's code adapted for 
-stable baselines.
+pygame and stable baselines.
 Original: 
 https://github.com/cybergalactic/PythonVehicleSimulator/blob/master/src/python_vehicle_simulator/vehicles/otter.py
+
+
+Important to remember:
+Rendering coordinates are defined form the top left corner of the simulation
+screen, while eta is defined from the center of the screen
 """
 
 from gymnasium import spaces
@@ -21,7 +26,7 @@ class Otter(Vehicle):
 
     def __init__(self, seed=None, dt=0.02) -> None:
         self.dt = dt
-        self.u = np.zeros((2, 1), float)
+        self.u = np.zeros(2, float)
 
         # Otter parameters for observation space
         psi_max = 2*np.pi   # [rad] Heading
@@ -51,11 +56,11 @@ class Otter(Vehicle):
         self.action_space = spaces.Box(
             low=-1.0, high=1.0, shape=(2,), seed=seed)
 
-        self.nu = np.array([0, 0, 0, 0, 0, 0], float)   # velocity vector
-        self.eta = np.zeros((6, 1)).astype(np.float32)   # position vector
+        self.nu = np.zeros(6, float)    # velocity vector
+        self.eta = np.zeros(6, float)   # position vector
 
         # propeller revolution states
-        self.u_feedback = np.array([0, 0], float)
+        self.u_feedback = np.zeros(2, float)
         self.name = "Otter USV (see 'otter.py' for more details)"
 
         self._init_model()
@@ -130,11 +135,13 @@ class Otter(Vehicle):
         self.n_min = -np.sqrt((0.5 * 13.6 * self.g) / self.k_neg)
 
         # MRB_CG = [ (m+mp) * I3  O3      (Fossen 2021, Chapter 3)
-        #               O3       Ig ]
+        #               O3        Ig ]
         MRB_CG = np.zeros((6, 6))
-        MRB_CG[0:3, 0:3] = (m + self.mp) * np.identity(3)
+        MRB_CG[0:3, 0:3] = (m + self.mp) * np.eye(3)
         MRB_CG[3:6, 3:6] = self.Ig
         MRB = self.H_rg.T @ MRB_CG @ self.H_rg
+
+        print(f"M_rb: {MRB}")
 
         # Hydrodynamic added mass (best practice)
         Xudot = -0.1 * m
@@ -201,7 +208,8 @@ class Otter(Vehicle):
         """
         Normal step method for simulation
         """
-        tau = self.PID()
+        # TODO: Substitute with PID
+        tau = 10 * np.array([nu_d[0], nu_d[2]])
         u_control = self.unconstrained_allocation(tau)
         nu, u = self.rl_step(eta, nu, prev_u, u_control, beta_c, V_c)
 
@@ -225,7 +233,7 @@ class Otter(Vehicle):
         nu_r = nu - nu_c  # relative velocity vector
 
         # Rigid body and added mass Coriolis and centripetal matrices
-        # CRB_CG = [ (m+mp) * Smtrx(nu2)          O3   (Fossen 2021, Chapter 6)
+        # CRB_CG = [ (m+mp) * Smtrx(nu2)          O3           (Fossen 2021, Chapter 6)
         #              O3                   -Smtrx(Ig*nu2)  ]
         CRB_CG = np.zeros((6, 6))
         CRB_CG[0:3, 0:3] = self.m_total * Smtrx(nu[3:6])
@@ -283,11 +291,14 @@ class Otter(Vehicle):
             + tau_crossflow
             - np.matmul(C, nu_r)
             - np.matmul(self.G, eta)
-            + g_0
+            # + g_0 # TODO: find out what todo with this cross term
         )
 
-        nu_dot = np.matmul(self.Minv, sum_tau)  # USV dynamics
+        # np.matmul(self.Minv, sum_tau)  # USV dynamics
+        nu_dot = self.Minv.dot(sum_tau)
         n_dot = (action - n) / self.T_n  # propeller dynamics
+
+        print(f"Minv: {self.Minv}")
 
         # Forward Euler integration [k+1]
         nu = nu + self.dt * nu_dot
@@ -297,11 +308,11 @@ class Otter(Vehicle):
 
         return nu, u
 
-    def render_update(self, eta: np.ndarray, offset: tuple[float, float]):
+    def render(self, eta: np.ndarray, offset: tuple[float, float]):
         rotated_image = pygame.transform.rotate(
             self.vessel_image, self.eta[-1])  # TODO: Is this right?
-        shape = rotated_image.get_rect()
-        shape.center = tuple(eta[0:2].tolist) + offset
+        center = np.subtract(tuple(eta[0:1]), offset)
+        shape = rotated_image.get_rect(center=center)
 
         return rotated_image, shape
 
