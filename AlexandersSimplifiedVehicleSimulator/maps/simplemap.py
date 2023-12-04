@@ -1,8 +1,6 @@
 import pygame
 from .map import Map
 
-# TODO: Make a map base class
-# TODO: Program a simple quay map
 # TODO: Convert stuff to NED?
 # TODO: Make an outline of the goal position
 #       that is marked on the map
@@ -26,6 +24,7 @@ class SimpleMap(Map):
     OCEAN_BLUE = (0, 157, 196)
     BACKGROUND_COLOR = OCEAN_BLUE
     ORIGO = (BOX_WIDTH/2, BOX_LENGTH/2)
+    SCALE = 10                      # [ppm] pixels/meter
 
     # Map obstacles
     quay = SimpleQuay(QUAY_WIDTH, QUAY_LENGTH, (QUAY_X_POS, QUAY_Y_POS))
