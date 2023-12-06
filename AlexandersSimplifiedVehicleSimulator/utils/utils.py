@@ -376,3 +376,36 @@ def gvect(W, B, theta, phi, r_bg, r_bb):
     ])
 
     return g
+
+
+# ------------------------------------------------------------------------------
+
+
+def D2R(deg: float) -> float:
+    """
+    rad = (deg * pi) / 180
+
+    Inputs:
+        deg: Degrees
+
+    Ouputs:
+        rad: Smallest signed angle in rad
+    """
+
+    return ssa(deg*np.pi/180)
+
+# ------------------------------------------------------------------------------
+
+
+def R2D(rad: float) -> float:
+    """
+    deg = (rad * 180) / pi
+
+    Inputs:
+        rad: Radians
+
+    Ouputs:
+        deg: Smallest signed angle in degrees
+    """
+
+    return ssa(rad)*180/np.pi
