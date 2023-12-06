@@ -16,8 +16,10 @@ import numpy as np
 import pygame
 
 from .vehicle import Vehicle
-from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat
+from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, D2R, R2D
 
+
+# TODO: Make the vessel visualization scale to the map
 
 class Otter(Vehicle):
     """
@@ -66,10 +68,14 @@ class Otter(Vehicle):
         self._init_model()
 
         # For render
-        self.vessel_image = pygame.Surface((self.L, self.B))
-        self.vessel_image.fill((255, 95, 31))
-        self.boat_shape = self.vessel_image.get_rect()
-        self.shape = self.boat_shape
+        SCALE = 100  # [px/m]
+        # self.vessel_image = pygame.Surface((SCALE*self.L, SCALE*self.B))
+        # self.vessel_image.fill((255, 95, 31))
+        self.vessel_image = pygame.image.load('vehicle/images/sailboat.png')
+        self.vessel_image = pygame.transform.scale(
+            self.vessel_image, (SCALE*self.L, SCALE*self.B))
+        # self.boat_shape = self.vessel_image.get_rect()
+        # self.shape = self.boat_shape
 
     def _init_model(self):
         # Constants
@@ -141,8 +147,6 @@ class Otter(Vehicle):
         MRB_CG[3:6, 3:6] = self.Ig
         MRB = self.H_rg.T @ MRB_CG @ self.H_rg
 
-        print(f"M_rb: {MRB}")
-
         # Hydrodynamic added mass (best practice)
         Xudot = -0.1 * m
         Yvdot = -1.5 * m
@@ -204,13 +208,12 @@ class Otter(Vehicle):
         B = self.k_pos * np.array([[1, 1], [-self.l1, -self.l2]])
         self.Binv = np.linalg.inv(B)
 
-    def step(self, eta, nu, prev_u, nu_d, beta_c, V_c):
+    def step(self, eta, nu, prev_u, tau_d, beta_c, V_c):
         """
         Normal step method for simulation
         """
         # TODO: Substitute with PID
-        tau = 10 * np.array([nu_d[0], nu_d[2]])
-        u_control = self.unconstrained_allocation(tau)
+        u_control = self.unconstrained_allocation(tau_d)
         nu, u = self.rl_step(eta, nu, prev_u, u_control, beta_c, V_c)
 
         return nu, u
@@ -298,8 +301,6 @@ class Otter(Vehicle):
         nu_dot = self.Minv.dot(sum_tau)
         n_dot = (action - n) / self.T_n  # propeller dynamics
 
-        print(f"Minv: {self.Minv}")
-
         # Forward Euler integration [k+1]
         nu = nu + self.dt * nu_dot
         n = n + self.dt * n_dot
@@ -308,10 +309,12 @@ class Otter(Vehicle):
 
         return nu, u
 
-    def render(self, eta: np.ndarray, offset: tuple[float, float]):
+    def render(self, eta: np.ndarray, scale: float, offset: tuple[float, float]):
+        # print(f"R2D(eta[2]): {R2D(eta[-1])}")
+        # print(f"[x, y]: {eta[0:2]}")
         rotated_image = pygame.transform.rotate(
-            self.vessel_image, self.eta[-1])  # TODO: Is this right?
-        center = np.subtract(tuple(eta[0:1]), offset)
+            self.vessel_image, -R2D(eta[-1]))
+        center = (eta[0]*scale + offset[0], eta[1]*scale + offset[1])
         shape = rotated_image.get_rect(center=center)
 
         return rotated_image, shape

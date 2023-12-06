@@ -33,17 +33,17 @@ class Simulator():
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
-        self.screen = None
-
-    def simulate(self):
         # Initialize pygame
         pygame.init()
+        pygame.display.set_caption("Otter Simulator")
+        self.clock = pygame.time.Clock()
 
         # Make a screen and fill it with a background colour
         self.screen = pygame.display.set_mode(
             [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
         self.screen.fill(self.map.OCEAN_BLUE)
 
+    def simulate(self):
         # Run until the user asks to quit
         running = True
         while running:
@@ -52,45 +52,44 @@ class Simulator():
                     if event.key == K_ESCAPE:
                         running = False
 
-                    # Manual surge motion
+                    # Manual surge force
                     if event.key == K_UP:
-                        # Constant positive surge velocity
-                        u_d = 4             # [kts]
-                        u_d = u_d * 0.514   # [m/s]
+                        # Constant positive surge force
+                        X = 5   # [N]
 
                     elif event.key == K_DOWN:
-                        # Constant negative surge velocity
-                        u_d = -4            # [kts]
-                        u_d = u_d * 0.514   # [m/s]
-                    else:
-                        u_d = 0
+                        # Constant negative surge force
+                        X = -5  # [N]
 
-                    # Manual yaw-rate
+                    else:
+                        X = 0   # [N]
+
+                    # Manual yaw moment
                     if event.key == K_RIGHT:
-                        # Constant positive yaw-rate
-                        r_d = 5   # [deg/s]
+                        # Constant positive yaw moment
+                        N = 5   # [Nm]
 
                     elif event.key == K_LEFT:
-                        # Constant negative yaw-rate
-                        r_d = -5
+                        # Constant positive yaw moment
+                        N = -5  # [Nm]
+
                     else:
-                        r_d = 0
+                        N = 0   # [Nm]
 
                     # Go back to start
                     if event.key == K_TAB:
                         # Go back to initial condition
                         pass
                 else:
-                    u_d = 0
-                    r_d = 0
+                    X = 0
+                    N = 0
 
                 if event.type == QUIT:
                     running = False
 
             if self.vehicle != None:
-                nu_d = np.array([u_d, 0, r_d])
-                # print(f"nu_d: {nu_d}")
-                self.step(nu_d)
+                tau_d = np.array([X, N])
+                self.step(tau_d)
 
             self.render()
 
@@ -100,21 +99,22 @@ class Simulator():
         self.nu, self.u = self.vehicle.step(
             self.eta, self.nu, self.u, nu_d, self.map.SIDESLIP, self.map.CURRENT_MAGNITUDE)
         self.eta = attitudeEuler(self.eta, self.nu, self.dt)
-        print(f"Nu:  {self.nu}")
-        print(f"Eta: {self.eta}")
-        print(f"u:   {self.u}")
+        # print(f"Nu:  {self.nu}")
+        # print(f"Eta: {self.eta}")
+        # print(f"u:   {self.u}")
 
     def render(self):
-        # self.screen.fill(self.map.OCEAN_BLUE)
+        self.screen.fill(self.map.OCEAN_BLUE)
         for obstacle in self.map.obstacles:
             self.screen.blit(obstacle.surf, obstacle.rect)
 
         if self.vehicle != None:
-            vessel_image, vessel_shape = self.vehicle.render(
-                self.eta, (0, 0))
-            self.screen.blit(vessel_image, vessel_shape)
+            vessel_image, image_pos = self.vehicle.render(
+                self.eta, self.map.SCALE, self.map.ORIGO)
+            self.screen.blit(vessel_image, image_pos)
 
         pygame.display.flip()
+        self.clock.tick(self.fps)
 
     def close(self):
         pygame.display.quit()
