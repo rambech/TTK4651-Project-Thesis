@@ -15,19 +15,20 @@ class SimpleQuay():
 
 class SimpleMap(Map):
     # Map parameters
-    BOX_WIDTH = 500                 # [m]   Overall box width
-    BOX_LENGTH = 500                # [m]   Overall box length
-    QUAY_WIDTH = 100                # [m]
-    QUAY_LENGTH = 10                # [m]
-    QUAY_X_POS = BOX_WIDTH/2        # [m]   x position of the center of quay
-    QUAY_Y_POS = 0 + QUAY_LENGTH/2  # [m]   given in screen coordinates
+    BOX_WIDTH = 500                     # [px]   Overall box width
+    BOX_LENGTH = 500                    # [px]   Overall box length
+    SCALE = 10                          # [px/m] pixels/meter
+    QUAY_SIZE_M = (10, 1)               # [m]
+    QUAY_SIZE = (QUAY_SIZE_M[0]*SCALE, QUAY_SIZE_M[1]*SCALE)
+    # [m]   x position of the center of quay
+    QUAY_X_POS = BOX_WIDTH/2
+    QUAY_Y_POS = 0 + QUAY_SIZE[1]/2     # [m]   given in screen coordinates
     OCEAN_BLUE = (0, 157, 196)
     BACKGROUND_COLOR = OCEAN_BLUE
     ORIGO = (BOX_WIDTH/2, BOX_LENGTH/2)
-    SCALE = 10                      # [ppm] pixels/meter
 
     # Map obstacles
-    quay = SimpleQuay(QUAY_WIDTH, QUAY_LENGTH, (QUAY_X_POS, QUAY_Y_POS))
+    quay = SimpleQuay(QUAY_SIZE[0], QUAY_SIZE[1], (QUAY_X_POS, QUAY_Y_POS))
 
     # Weather
     SIDESLIP = 0  # 30           # [deg]
