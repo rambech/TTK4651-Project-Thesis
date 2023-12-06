@@ -46,6 +46,7 @@ class Simulator():
     def simulate(self):
         # Run until the user asks to quit
         running = True
+        out_of_bounds = False
         while running:
             for event in pygame.event.get():
                 if event.type == KEYDOWN:

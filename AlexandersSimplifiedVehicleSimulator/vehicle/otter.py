@@ -212,7 +212,6 @@ class Otter(Vehicle):
         """
         Normal step method for simulation
         """
-        # TODO: Substitute with PID
         u_control = self.unconstrained_allocation(tau_d)
         nu, u = self.rl_step(eta, nu, prev_u, u_control, beta_c, V_c)
 
@@ -318,13 +317,6 @@ class Otter(Vehicle):
         shape = rotated_image.get_rect(center=center)
 
         return rotated_image, shape
-
-    def PID(self, nu, nu_d, nu_err, nu_dot, nu_int):
-        K_p = np.array([10, ])
-        K_i = np.array[[]]
-        # TODO: make a velocity PID-controller
-        nu_err = nu - nu_d
-        a_b = nu_dot - K_p @ nu_err - K_i @ nu_int
 
     def unconstrained_allocation(self, tau) -> np.ndarray:
         u_control = self.Binv @ tau
