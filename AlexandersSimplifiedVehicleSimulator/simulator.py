@@ -28,8 +28,8 @@ class Simulator():
         self.dt = 1/self.fps
 
         # Initial conditions
-        self.eta_i = eta_init  # Save initial pose
-        self.eta = eta_init    # Initialize pose
+        self.eta_init = eta_init    # Save initial pose
+        self.eta = eta_init         # Initialize pose
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
@@ -80,7 +80,9 @@ class Simulator():
                     # Go back to start
                     if event.key == K_TAB:
                         # Go back to initial condition
-                        pass
+                        print("Tab")
+                        self.eta = self.eta_init
+                        self.nu = np.zeros(6, float)
                 else:
                     X = 0
                     N = 0
@@ -96,9 +98,9 @@ class Simulator():
 
         self.close()
 
-    def step(self, nu_d: np.ndarray):
+    def step(self, tau_d: np.ndarray):
         self.nu, self.u = self.vehicle.step(
-            self.eta, self.nu, self.u, nu_d, self.map.SIDESLIP, self.map.CURRENT_MAGNITUDE)
+            self.eta, self.nu, self.u, tau_d, self.map.SIDESLIP, self.map.CURRENT_MAGNITUDE)
         self.eta = attitudeEuler(self.eta, self.nu, self.dt)
         # print(f"Nu:  {self.nu}")
         # print(f"Eta: {self.eta}")

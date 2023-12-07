@@ -83,11 +83,6 @@ class Otter(Vehicle):
         self.g = 9.81              # acceleration of gravity (m/s^2)
         rho = 1026                 # density of water (kg/m^3)
 
-        # self.ref = 0
-        # self.V_c = 0
-        # self.beta_c = beta_current * D2R
-        # self.tauX = 120  # surge force (N) # TODO: Do something with this?!
-
         # Initialize the Otter USV model
         self.T_n = 1.0  # propeller time constants (s)
         self.L = 2.0    # Length (m)

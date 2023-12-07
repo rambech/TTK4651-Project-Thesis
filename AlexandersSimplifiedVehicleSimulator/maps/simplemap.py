@@ -1,6 +1,8 @@
 import pygame
 from .map import Map
 
+# TODO: Make the quay flush with the end wall,
+#       in order to make the space convex
 # TODO: Convert stuff to NED?
 # TODO: Make an outline of the goal position
 #       that is marked on the map
