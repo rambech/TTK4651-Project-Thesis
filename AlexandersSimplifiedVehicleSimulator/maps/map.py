@@ -2,7 +2,7 @@ from pygame import Surface
 
 
 class Wall():
-    def __init__(self, wall_width, wall_length, wall_pos: tuple[float, float]) -> None:
+    def __init__(self, wall_width: float, wall_length: float, wall_pos: tuple[float, float]) -> None:
         self.surf = Surface((wall_width, wall_length))
         self.surf.fill((0, 0, 0))   # Black
         self.rect = self.surf.get_rect(center=(wall_pos[0], wall_pos[1]))

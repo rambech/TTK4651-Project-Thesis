@@ -1,5 +1,6 @@
 import pygame
-from .map import Map
+import numpy as np
+from .map import Map, Wall
 
 # TODO: Make the quay flush with the end wall,
 #       in order to make the space convex
@@ -13,13 +14,14 @@ class SimpleQuay():
         self.surf = pygame.Surface((quay_width, quay_length))
         self.surf.fill((192, 192, 192))
         self.rect = self.surf.get_rect(center=(quay_pos[0], quay_pos[1]))
+        self.bump_dir = np.array([-180, 0, 0])  # Push vehicle southward
 
 
 class SimpleMap(Map):
     # Map parameters
-    BOX_WIDTH = 500                     # [px]   Overall box width
-    BOX_LENGTH = 500                    # [px]   Overall box length
-    SCALE = 10                          # [px/m] pixels/meter
+    BOX_WIDTH = 700                     # [px]   Overall box width
+    BOX_LENGTH = 700                    # [px]   Overall box length
+    SCALE = 20                          # [px/m] pixels/meter
     QUAY_SIZE_M = (10, 1)               # [m]
     QUAY_SIZE = (QUAY_SIZE_M[0]*SCALE, QUAY_SIZE_M[1]*SCALE)
     # [m]   x position of the center of quay
@@ -31,6 +33,11 @@ class SimpleMap(Map):
 
     # Map obstacles
     quay = SimpleQuay(QUAY_SIZE[0], QUAY_SIZE[1], (QUAY_X_POS, QUAY_Y_POS))
+    extra_wall_width = (BOX_WIDTH/2)-(QUAY_SIZE[0]/2)
+    extra_wall_east = Wall(extra_wall_width, QUAY_SIZE[1],
+                           (BOX_WIDTH-(extra_wall_width/2), QUAY_Y_POS))
+    extra_wall_west = Wall(extra_wall_width, QUAY_SIZE[1],
+                           (extra_wall_width/2, QUAY_Y_POS))
 
     # Weather
     SIDESLIP = 0  # 30           # [deg]
@@ -38,7 +45,8 @@ class SimpleMap(Map):
 
     def __init__(self) -> None:
         super(SimpleMap, self).__init__()
-        self.obstacles.append(self.quay)
+        self.obstacles.append(self.extra_wall_east)
+        self.obstacles.append(self.extra_wall_west)
 
 
 def test_map():
