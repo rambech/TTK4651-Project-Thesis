@@ -409,3 +409,42 @@ def R2D(rad: float) -> float:
     """
 
     return ssa(rad)*180/np.pi
+
+# ------------------------------------------------------------------------------
+
+
+def B2N(eta: np.ndarray) -> np.ndarray:
+    """
+    J_Theta(eta) = [R_b^n(Theta)       0_3x3    
+                       0_3x3      T_Theta(Theta)]
+
+    Inputs:
+        eta: Pose in NED frame
+
+    Outputs:
+        J: BODY to NED transformation
+    """
+    R = Rzyx(eta[3], eta[4], eta[4])
+    T = Tzyx(eta[3], eta[4])
+
+    J = np.block([[R, np.zeros((3, 3), float)],
+                  [np.zeros((3, 3), float), T]])
+
+    return J
+
+# ------------------------------------------------------------------------------
+
+
+def N2B(eta: np.ndarray) -> np.ndarray:
+    """
+    J^-1(eta) = (J_Theta(eta))^-1
+
+    Inputs:
+        eta: Pose in NED frame
+
+    Outputs:
+        J_inv: NED to BODY transformation
+    """
+    J_inv = np.linalg.inv(B2N(eta))
+
+    return J_inv
