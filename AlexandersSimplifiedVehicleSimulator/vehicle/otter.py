@@ -16,10 +16,10 @@ import numpy as np
 import pygame
 
 from .vehicle import Vehicle
-from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, D2R, R2D
+from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, D2R, R2D, B2N
 
 
-# TODO: Make the vessel visualization scale to the map
+# TODO: Make a 1.08 x 2 figure to be used as vessel_image
 
 class Otter(Vehicle):
     """
@@ -68,14 +68,14 @@ class Otter(Vehicle):
         self._init_model()
 
         # For render
-        SCALE = 100  # [px/m]
-        # self.vessel_image = pygame.Surface((SCALE*self.L, SCALE*self.B))
-        # self.vessel_image.fill((255, 95, 31))
-        self.vessel_image = pygame.image.load('vehicle/images/sailboat.png')
-        self.vessel_image = pygame.transform.scale(
-            self.vessel_image, (SCALE*self.L, SCALE*self.B))
-        # self.boat_shape = self.vessel_image.get_rect()
-        # self.shape = self.boat_shape
+        self.scale = 20  # [px/m]
+        self.vessel_image = pygame.Surface(
+            (self.scale*self.L, self.scale*self.B))
+        # self.vessel_image.fill((255, 95, 31)) # One type of orange
+        self.vessel_image.fill((239, 129, 20))  # NTNU Orange
+        # self.vessel_image = pygame.image.load('vehicle/images/sailboat.png')
+        # self.vessel_image = pygame.transform.scale(
+        #     self.vessel_image, (self.scale*self.L, self.scale*self.B))
 
     def _init_model(self):
         # Constants
@@ -208,7 +208,8 @@ class Otter(Vehicle):
         Normal step method for simulation
         """
         u_control = self.unconstrained_allocation(tau_d)
-        nu, u = self.rl_step(eta, nu, prev_u, u_control, beta_c, V_c)
+        nu, u = self.rl_step(
+            eta, nu, prev_u, u_control, beta_c, V_c)
 
         return nu, u
 
@@ -288,7 +289,7 @@ class Otter(Vehicle):
             + tau_crossflow
             - np.matmul(C, nu_r)
             - np.matmul(self.G, eta)
-            # + g_0 # TODO: find out what todo with this cross term
+            + g_0
         )
 
         # np.matmul(self.Minv, sum_tau)  # USV dynamics
@@ -303,12 +304,12 @@ class Otter(Vehicle):
 
         return nu, u
 
-    def render(self, eta: np.ndarray, scale: float, offset: tuple[float, float]):
+    def render(self, eta: np.ndarray, offset: tuple[float, float]):
         # print(f"R2D(eta[2]): {R2D(eta[-1])}")
         # print(f"[x, y]: {eta[0:2]}")
         rotated_image = pygame.transform.rotate(
             self.vessel_image, -R2D(eta[-1]))
-        center = (eta[0]*scale + offset[0], eta[1]*scale + offset[1])
+        center = (eta[0]*self.scale + offset[0], eta[1]*self.scale + offset[1])
         shape = rotated_image.get_rect(center=center)
 
         return rotated_image, shape

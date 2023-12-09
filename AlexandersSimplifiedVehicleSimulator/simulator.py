@@ -6,7 +6,7 @@ import pygame
 from vehicle import Otter
 from maps import SimpleMap
 import numpy as np
-from utils import attitudeEuler
+from utils import attitudeEuler, D2R, B2N, N2B
 
 from pygame.locals import (
     K_UP,
@@ -19,6 +19,10 @@ from pygame.locals import (
     QUIT,
 )
 
+# TODO: Add goal pose feature
+# TODO: Add comments
+# TODO: Add function/method descriptions
+
 
 class Simulator():
     def __init__(self, vehicle: Otter, map: SimpleMap, eta_init=np.zeros(6, float), fps=30) -> None:
@@ -28,10 +32,10 @@ class Simulator():
         self.dt = 1/self.fps
 
         # Initial conditions
-        self.eta_init = eta_init    # Save initial pose
-        self.eta = eta_init         # Initialize pose
-        self.nu = np.zeros(6, float)
-        self.u = np.zeros(2, float)
+        self.eta_init = eta_init        # Save initial pose
+        self.eta = eta_init             # Initialize pose
+        self.nu = np.zeros(6, float)    # Init velocity
+        self.u = np.zeros(2, float)     # Init control vector
 
         # Initialize pygame
         pygame.init()
@@ -42,9 +46,15 @@ class Simulator():
         self.screen = pygame.display.set_mode(
             [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
         self.screen.fill(self.map.OCEAN_BLUE)
+        self.quay = self.map.quay
+
+        # Initialize hitboxes
+        self.vessel_rect = self.vehicle.vessel_image.get_rect()
+        self.bounds = []
+        self.render()
 
     def simulate(self):
-        # Run until the user asks to quit
+        # Run until the user asks to quit or hit something they shouldn't
         running = True
         out_of_bounds = False
         while running:
@@ -91,33 +101,91 @@ class Simulator():
                     running = False
 
             if self.vehicle != None:
+                # Manual force input
                 tau_d = np.array([X, N])
-                self.step(tau_d)
+
+                if self.vessel_rect.colliderect(self.quay.rect):
+                    # Stop simulation if the quay is hit too hard
+                    if np.linalg.norm(self.nu[0:3], 3) > 0.5:
+                        running = False
+
+                    # Otherwise bump
+                    else:
+                        self.bump(self.quay)
+
+                # End simulation if out of bounds
+                for bound in self.bounds:
+                    if self.vessel_rect.colliderect(bound):
+                        out_of_bounds = True
+                        running = False
+
+                if not out_of_bounds:
+                    self.step(tau_d)
 
             self.render()
-
         self.close()
 
     def step(self, tau_d: np.ndarray):
         self.nu, self.u = self.vehicle.step(
             self.eta, self.nu, self.u, tau_d, self.map.SIDESLIP, self.map.CURRENT_MAGNITUDE)
         self.eta = attitudeEuler(self.eta, self.nu, self.dt)
-        # print(f"Nu:  {self.nu}")
-        # print(f"Eta: {self.eta}")
-        # print(f"u:   {self.u}")
 
     def render(self):
         self.screen.fill(self.map.OCEAN_BLUE)
+        bounds = []
         for obstacle in self.map.obstacles:
+            bounds.append(obstacle.rect)
             self.screen.blit(obstacle.surf, obstacle.rect)
 
+        self.bounds = bounds
+
+        self.screen.blit(self.quay.surf, self.quay.rect)
+
         if self.vehicle != None:
-            vessel_image, image_pos = self.vehicle.render(
-                self.eta, self.map.SCALE, self.map.ORIGO)
-            self.screen.blit(vessel_image, image_pos)
+            vessel_image, self.vessel_rect = self.vehicle.render(
+                self.eta, self.map.ORIGO)
+            self.screen.blit(vessel_image, self.vessel_rect)
+
+            # Speedometer
+            U = np.linalg.norm(self.nu[0:2], 2)
+            font = pygame.font.SysFont("Times New Roman", 12)
+            speed = font.render(f"SOG: {np.round(U, 2)} [m/s]", 1, (0, 0, 0))
+            self.screen.blit(speed, (10, self.map.BOX_LENGTH-20))
+
+            # Position
+            x = np.round(self.eta[0])
+            y = np.round(self.eta[1])
+            position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
+            self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
 
         pygame.display.flip()
         self.clock.tick(self.fps)
+
+    def bump(self, quay):
+        """
+        Simulates an elastic collision between the quay and the vessel
+
+
+        Inputs:
+            quay: quay
+        """
+        # TODO: make this work for all quays
+
+        # Transform nu from {b} to {n}
+        nu_n = B2N(self.eta).dot(self.nu)
+
+        # Send the vessel back with the same speed it came in
+        U_n = np.linalg.norm(nu_n[0:3], 3)
+        min_U_n = min(-U_n, U_n)
+
+        # Necessary angles
+        beta = np.arctan(nu_n[2]/nu_n[0])   # Sideslip
+        alpha = np.arcsin(nu_n[1]/min_U_n)  # Angle of attack
+
+        nu_n[0:3] = np.array([min_U_n*np.cos(alpha)*np.cos(beta),
+                              min_U_n*np.sin(beta),
+                              min_U_n*np.sin(alpha)*np.cos(beta)])
+        self.nu = N2B(self.eta).dot(nu_n)
 
     def close(self):
         pygame.display.quit()
@@ -125,11 +193,12 @@ class Simulator():
 
 
 def test_simulator():
-    fps = 30
+    fps = 50
     vehicle = Otter(dt=1/fps)
+    eta_init = np.array([0, 0, 0, 0, 0, -np.pi/2], float)
 
     map = SimpleMap()
-    simulator = Simulator(vehicle, map, fps=fps)
+    simulator = Simulator(vehicle, map, eta_init=eta_init, fps=fps)
     simulator.simulate()
 
 
