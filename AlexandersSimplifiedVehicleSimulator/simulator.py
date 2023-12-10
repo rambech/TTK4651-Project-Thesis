@@ -116,10 +116,10 @@ class Simulator():
         self.dt = 1/self.fps
 
         # Initial conditions
-        self.eta_init = eta_init        # Save initial pose
-        self.eta = eta_init             # Initialize pose
-        self.nu = np.zeros(6, float)    # Init velocity
-        self.u = np.zeros(2, float)     # Init control vector
+        self.eta_init = eta_init.copy()  # Save initial pose
+        self.eta = eta_init              # Initialize pose
+        self.nu = np.zeros(6, float)     # Init velocity
+        self.u = np.zeros(2, float)      # Init control vector
 
         # Initialize pygame
         pygame.init()
@@ -182,9 +182,10 @@ class Simulator():
                     # Go back to start
                     if event.key == K_TAB:
                         # Go back to initial condition
-                        print("Tab")
-                        self.eta = self.eta_init
+                        # Note: use copy() when copying arrays
+                        self.eta = self.eta_init.copy()
                         self.nu = np.zeros(6, float)
+                        self.u = np.zeros(2, float)
                 else:
                     X = 0   # [N]
                     N = 0   # [Nm]
