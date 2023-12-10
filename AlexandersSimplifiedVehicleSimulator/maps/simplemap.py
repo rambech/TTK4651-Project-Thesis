@@ -11,7 +11,6 @@ class SimpleQuay():
         self.surf = pygame.Surface((quay_width, quay_length))
         self.surf.fill((192, 192, 192))
         self.rect = self.surf.get_rect(center=(quay_pos[0], quay_pos[1]))
-        self.bump_idx = 0   # Push vehicle southward
 
 
 class SimpleMap(Map):
