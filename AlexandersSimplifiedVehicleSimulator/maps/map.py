@@ -1,4 +1,22 @@
-from pygame import Surface
+from pygame import Surface, image, transform
+import numpy as np
+from utils import R2D
+
+# TODO: Add comments and descriptions
+
+
+class Target():
+    def __init__(self, eta_d: np.ndarray, L: float, B: float, scale: float, offset: float) -> None:
+        target_image = image.load(
+            'vehicle/images/target.png')
+        target_image = transform.scale(
+            target_image, (scale*B, scale*L))
+        self.image = transform.rotate(
+            target_image, -R2D(eta_d[-1]))
+        # center = (eta_d[0]*scale + offset[0], eta_d[1]*scale + offset[1])
+        center = (eta_d[0], eta_d[1])
+        self.rect = self.image.get_rect(center=center)
+        self.eta_d = eta_d  # Save desired pose
 
 
 class Wall():
