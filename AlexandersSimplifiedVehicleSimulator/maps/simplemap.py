@@ -2,9 +2,6 @@ import pygame
 import numpy as np
 from .map import Map, Wall
 
-# TODO: Make the quay flush with the end wall,
-#       in order to make the space convex
-# TODO: Convert stuff to NED?
 # TODO: Make an outline of the goal position
 #       that is marked on the map
 
@@ -14,22 +11,22 @@ class SimpleQuay():
         self.surf = pygame.Surface((quay_width, quay_length))
         self.surf.fill((192, 192, 192))
         self.rect = self.surf.get_rect(center=(quay_pos[0], quay_pos[1]))
-        self.bump_dir = np.array([-180, 0, 0])  # Push vehicle southward
+        self.bump_idx = 0   # Push vehicle southward
 
 
 class SimpleMap(Map):
     # Map parameters
     BOX_WIDTH = 700                     # [px]   Overall box width
     BOX_LENGTH = 700                    # [px]   Overall box length
-    SCALE = 20                          # [px/m] pixels/meter
-    QUAY_SIZE_M = (10, 1)               # [m]
+    SCALE = 30                          # [px/m] pixels/meter
+    QUAY_SIZE_M = (10, 0.75)            # [m]
     QUAY_SIZE = (QUAY_SIZE_M[0]*SCALE, QUAY_SIZE_M[1]*SCALE)
     # [m]   x position of the center of quay
     QUAY_X_POS = BOX_WIDTH/2
     QUAY_Y_POS = 0 + QUAY_SIZE[1]/2     # [m]   given in screen coordinates
     OCEAN_BLUE = (0, 157, 196)
     BACKGROUND_COLOR = OCEAN_BLUE
-    ORIGO = (BOX_WIDTH/2, BOX_LENGTH/2)
+    origin = np.array([BOX_WIDTH/2, BOX_LENGTH/2, 0], float)
 
     # Map obstacles
     quay = SimpleQuay(QUAY_SIZE[0], QUAY_SIZE[1], (QUAY_X_POS, QUAY_Y_POS))
