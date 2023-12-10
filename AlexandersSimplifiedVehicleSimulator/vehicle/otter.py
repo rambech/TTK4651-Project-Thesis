@@ -16,7 +16,7 @@ import numpy as np
 import pygame
 
 from .vehicle import Vehicle
-from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, D2R, R2D, B2N
+from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, R2D, N2S
 
 
 # TODO: Make a 1.08 x 2 figure to be used as vessel_image
@@ -68,14 +68,14 @@ class Otter(Vehicle):
         self._init_model()
 
         # For render
-        self.scale = 20  # [px/m]
-        self.vessel_image = pygame.Surface(
-            (self.scale*self.L, self.scale*self.B))
-        # self.vessel_image.fill((255, 95, 31)) # One type of orange
-        self.vessel_image.fill((239, 129, 20))  # NTNU Orange
-        # self.vessel_image = pygame.image.load('vehicle/images/sailboat.png')
-        # self.vessel_image = pygame.transform.scale(
-        #     self.vessel_image, (self.scale*self.L, self.scale*self.B))
+        self.scale = 30  # [px/m]
+        # self.vessel_image = pygame.Surface(
+        #     (self.scale*self.L, self.scale*self.B))
+        # self.vessel_image.fill((239, 129, 20))  # NTNU Orange
+        self.vessel_image = pygame.image.load(
+            'vehicle/images/otter.png')
+        self.vessel_image = pygame.transform.scale(
+            self.vessel_image, (self.scale*self.B, self.scale*self.L))
 
     def _init_model(self):
         # Constants
@@ -305,14 +305,13 @@ class Otter(Vehicle):
         return nu, u
 
     def render(self, eta: np.ndarray, offset: tuple[float, float]):
-        # print(f"R2D(eta[2]): {R2D(eta[-1])}")
-        # print(f"[x, y]: {eta[0:2]}")
         rotated_image = pygame.transform.rotate(
-            self.vessel_image, -R2D(eta[-1]))
-        center = (eta[0]*self.scale + offset[0], eta[1]*self.scale + offset[1])
-        shape = rotated_image.get_rect(center=center)
+            self.vessel_image, -R2D(eta[-1])).convert_alpha()
+        eta_s = N2S(eta, self.scale, offset)
+        center = (eta_s[0], eta_s[1])
+        rect = rotated_image.get_rect(center=center)
 
-        return rotated_image, shape
+        return rotated_image, rect
 
     def unconstrained_allocation(self, tau) -> np.ndarray:
         u_control = self.Binv @ tau
