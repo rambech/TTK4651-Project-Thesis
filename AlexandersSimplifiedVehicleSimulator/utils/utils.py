@@ -424,7 +424,7 @@ def B2N(eta: np.ndarray) -> np.ndarray:
     Outputs:
         J: BODY to NED transformation
     """
-    R = Rzyx(eta[3], eta[4], eta[4])
+    R = Rzyx(eta[3], eta[4], eta[5])
     T = Tzyx(eta[3], eta[4])
 
     J = np.block([[R, np.zeros((3, 3), float)],
@@ -448,3 +448,32 @@ def N2B(eta: np.ndarray) -> np.ndarray:
     J_inv = np.linalg.inv(B2N(eta))
 
     return J_inv
+
+# ------------------------------------------------------------------------------
+
+
+def N2S(eta_n, scale, origin):
+    """
+    Go from screen coordinates to NED coordinates
+
+    """
+    psi_offset = np.pi/2
+    eta_s = N2B(np.array([0, 0, 0, 0, 0, psi_offset], float)).dot(eta_n)
+    eta_s[0:3] = eta_s[0:3]*scale + origin
+
+    return eta_s
+
+# ------------------------------------------------------------------------------
+
+
+def S2N(eta_s, scale, origin):
+    """
+    Go from NED coordinates to screen coordinates
+    """
+    psi_offset = np.pi/2
+    eta_s[0:3] = (eta_s[0:3] - origin)/scale
+    eta_n = B2N(np.array([0, 0, 0, 0, 0, psi_offset], float)).dot(eta_s)
+
+    return eta_n
+
+# ------------------------------------------------------------------------------
