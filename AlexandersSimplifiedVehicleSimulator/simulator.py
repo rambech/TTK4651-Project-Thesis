@@ -4,9 +4,9 @@ Simple simulator for driving round boats
 
 import pygame
 from vehicle import Otter
-from maps import SimpleMap
+from maps import SimpleMap, Target
 import numpy as np
-from utils import attitudeEuler, D2R, B2N, N2B
+from utils import attitudeEuler, D2R, B2N, N2B, S2N, N2S
 
 from pygame.locals import (
     K_UP,
@@ -25,7 +25,7 @@ from pygame.locals import (
 
 
 class Simulator():
-    def __init__(self, vehicle: Otter, map: SimpleMap, eta_init=np.zeros(6, float), fps=30) -> None:
+    def __init__(self, vehicle: Otter, map: SimpleMap, target=None, eta_init=np.zeros(6, float), fps=30) -> None:
         self.vehicle = vehicle
         self.map = map
         self.fps = fps
@@ -47,6 +47,7 @@ class Simulator():
             [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
         self.screen.fill(self.map.OCEAN_BLUE)
         self.quay = self.map.quay
+        self.target = target
 
         # Initialize hitboxes
         self.vessel_rect = self.vehicle.vessel_image.get_rect()
@@ -139,11 +140,14 @@ class Simulator():
 
         self.bounds = bounds
 
+        if self.target != None:
+            self.screen.blit(self.target.image, self.target.rect)
+
         self.screen.blit(self.quay.surf, self.quay.rect)
 
         if self.vehicle != None:
             vessel_image, self.vessel_rect = self.vehicle.render(
-                self.eta, self.map.ORIGO)
+                self.eta, self.map.origin)
             self.screen.blit(vessel_image, self.vessel_rect)
 
             # Speedometer
@@ -164,7 +168,6 @@ class Simulator():
     def bump(self, quay):
         """
         Simulates an elastic collision between the quay and the vessel
-
 
         Inputs:
             quay: quay
@@ -193,12 +196,17 @@ class Simulator():
 
 
 def test_simulator():
+    # Initialize constants
     fps = 50
+    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+    eta_d = np.array([10, 0, 0, 0, 0, 0], float)
+
     vehicle = Otter(dt=1/fps)
-    eta_init = np.array([0, 0, 0, 0, 0, -np.pi/2], float)
 
     map = SimpleMap()
-    simulator = Simulator(vehicle, map, eta_init=eta_init, fps=fps)
+    eta_d = N2S(eta_d, map.SCALE, map.origin)
+    target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
+    simulator = Simulator(vehicle, map, target, eta_init=eta_init, fps=fps)
     simulator.simulate()
 
 
