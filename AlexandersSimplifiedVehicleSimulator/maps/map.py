@@ -1,20 +1,49 @@
 from pygame import Surface, image, transform
 import numpy as np
-from utils import R2D
+from utils import R2D, N2S
 
 # TODO: Add comments and descriptions
 
 
 class Target():
     def __init__(self, eta_d: np.ndarray, L: float, B: float, scale: float, offset: float) -> None:
+        """
+        Displays and holds target pose properties
+
+        Parameters
+        ----------
+        eta_d : np.ndarray
+            Is the desired pose in {n} frame
+        L : float
+            Length of the vessel
+        B : float
+            Beam of the vessel
+        scale: float
+            Scaling to fit screen   [px/m]
+        offset: float
+            x, y distance from top left corner to the center
+            of the game screen
+
+        Attributes
+        ----------
+        image : pygame.image
+            Visualisation of target pose
+        rect : pygame.Rect
+            Hitbox of the target pose
+        eta_d : np.ndarray
+            Desired pose in {n} frame
+        """
+
+        # Use screen coordinates for rendering
+        eta_ds = N2S(eta_d, scale, offset)
         target_image = image.load(
             'vehicle/images/target.png')
         target_image = transform.scale(
             target_image, (scale*B, scale*L))
         self.image = transform.rotate(
-            target_image, -R2D(eta_d[-1]))
-        # center = (eta_d[0]*scale + offset[0], eta_d[1]*scale + offset[1])
-        center = (eta_d[0], eta_d[1])
+            target_image, -R2D(eta_ds[-1]))
+
+        center = (eta_ds[0], eta_ds[1])
         self.rect = self.image.get_rect(center=center)
         self.eta_d = eta_d  # Save desired pose
 

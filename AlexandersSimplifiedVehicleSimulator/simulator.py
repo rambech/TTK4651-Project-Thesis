@@ -19,7 +19,7 @@ import pygame
 from vehicle import Otter
 from maps import SimpleMap, Target
 import numpy as np
-from utils import attitudeEuler, B2N, N2B, N2S
+from utils import attitudeEuler, B2N, N2B
 
 # Keystroke inputs
 from pygame.locals import (
@@ -321,8 +321,6 @@ def test_simulator():
     vehicle = Otter(dt=1/fps)
 
     map = SimpleMap()
-    # Transform from {n} to {s}
-    eta_d = N2S(eta_d, map.SCALE, map.origin)
     target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
     simulator = Simulator(vehicle, map, target, eta_init=eta_init, fps=fps)
     simulator.simulate()
