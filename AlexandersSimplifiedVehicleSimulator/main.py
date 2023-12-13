@@ -8,6 +8,13 @@ import os
 import rl
 from vehicle import Otter
 
+# TODO: Make it possible to add disturbances using keystrokes,
+#       with side arrows determining direction and up and down
+#       determining the magnitude
+# TODO: Prompt user to input a test-name
+# TODO: Save test data in a file for later plotting
+# TODO: Make plotting tools for later plotting
+
 RL = False
 
 if RL == True:
