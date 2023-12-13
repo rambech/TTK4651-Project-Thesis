@@ -19,7 +19,7 @@ from .vehicle import Vehicle
 from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, R2D, N2S
 
 
-# TODO: Make a 1.08 x 2 figure to be used as vessel_image
+# TODO: Add particle bursts from each thruster
 
 class Otter(Vehicle):
     """
