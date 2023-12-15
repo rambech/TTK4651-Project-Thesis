@@ -15,7 +15,9 @@ from rl.rewards import norm
 
 # TODO: Use SSA
 # TODO: Make it possible to have the current change during an episode
-# TODO: Make a docking threshold that is (0, 1]
+# TODO: Make a docking threshold of some sort
+# TODO: Implement closest obstacle measure for the observation space
+# TODO: Implement distance and angle to closest point on the quay for the observation space
 
 # Environment parameters
 # BOX_WIDTH = 500                 # [m]   Overall box width

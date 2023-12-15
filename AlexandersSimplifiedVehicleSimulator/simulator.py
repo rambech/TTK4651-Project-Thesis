@@ -19,7 +19,7 @@ import pygame
 from vehicle import Otter
 from maps import SimpleMap, Target
 import numpy as np
-from utils import attitudeEuler, B2N, N2B
+from utils import attitudeEuler, B2N, N2B, N2S, D2L
 
 # Keystroke inputs
 from pygame.locals import (
@@ -35,6 +35,7 @@ from pygame.locals import (
 
 # TODO: Add comments
 # TODO: Add function/method descriptions
+# TODO: Terminate if vessel is outside eta limits
 
 
 class Simulator():
@@ -138,6 +139,8 @@ class Simulator():
         # Initialize hitboxes
         self.vessel_rect = self.vehicle.vessel_image.get_rect()
         self.bounds = []
+        self.edges = []
+        self.vertices = []
         self.render()
 
     def simulate(self):
@@ -201,17 +204,30 @@ class Simulator():
                 if self.vessel_rect.colliderect(self.quay.rect):
                     # Stop simulation if the quay is hit too hard
                     if np.linalg.norm(self.nu[0:3], 3) > 0.5:
-                        running = False
+                        # running = False
+                        self.bump()
 
                     # Otherwise bump
                     else:
                         self.bump()
 
+                angle = 0
+                dist = np.inf
                 # End simulation if out of bounds
                 for bound in self.bounds:
+                    # for vertex in self.vertices:
+                    #     bearing, range = D2L(self.edges, vertex)
+                    #     if range < dist:
+                    #         angle = bearing
+                    #         dist = range
+
                     if self.vessel_rect.colliderect(bound):
                         out_of_bounds = True
                         running = False
+
+                # print(f"Obstacle: \n \
+                #         Distance: {np.round(dist)} [m] \n \
+                #         Angle:    {np.round(angle)} [degrees]")
 
                 # Step vehicle simulation
                 if not out_of_bounds:
@@ -236,6 +252,7 @@ class Simulator():
             self.eta, self.nu, self.u, tau_d, self.map.SIDESLIP, self.map.CURRENT_MAGNITUDE)
         # Kinematic step
         self.eta = attitudeEuler(self.eta, self.nu, self.dt)
+        self.vertices = self.vehicle.vertices(self.eta)
 
     def render(self):
         """
@@ -245,14 +262,17 @@ class Simulator():
 
         self.screen.fill(self.map.OCEAN_BLUE)
         bounds = []
+        edges = []
 
         # Add outer bounds of map
         for obstacle in self.map.obstacles:
             bounds.append(obstacle.rect)
             self.screen.blit(obstacle.surf, obstacle.rect)
+            edges.append(obstacle.colliding_edge)
 
         # List of bounds
         self.bounds = bounds
+        self.edges = edges
 
         # Render target pose to screen
         if self.target != None:
@@ -261,10 +281,14 @@ class Simulator():
         # Render quay to screen
         self.screen.blit(self.quay.surf, self.quay.rect)
 
+        #
+
         # Render vehicle to screen
         if self.vehicle != None:
             vessel_image, self.vessel_rect = self.vehicle.render(
                 self.eta, self.map.origin)
+            # print(f"origin: {self.map.origin}")
+            # print(f"eta_n: {self.eta}")
             self.screen.blit(vessel_image, self.vessel_rect)
 
             # Speedometer
@@ -279,6 +303,17 @@ class Simulator():
             position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
             self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
 
+            for vertex in self.vertices:
+                vertex_n = np.array([vertex[0], vertex[1], 0, 0, 0, 0])
+                vertex_s = N2S(vertex_n, self.vehicle.scale, self.map.origin)
+                pygame.draw.circle(self.screen, (255, 26, 117),
+                                   (vertex_s[0], vertex_s[1]), 2)
+
+            for edge in self.edges:
+                # vertex_1_n = np.
+                pygame.draw.line(self.screen, (255, 26, 117),
+                                 edge[0], edge[1], 2)
+
         pygame.display.flip()
         self.clock.tick(self.fps)
 
@@ -292,7 +327,7 @@ class Simulator():
 
         # Send the vessel back with the same speed it came in
         U_n = np.linalg.norm(nu_n[0:3], 3)
-        min_U_n = min(-U_n, U_n)
+        min_U_n = -U_n
 
         # Necessary angles
         beta = np.arctan(nu_n[2]/nu_n[0])   # Sideslip
@@ -302,6 +337,12 @@ class Simulator():
                               min_U_n*np.sin(beta),
                               min_U_n*np.sin(alpha)*np.cos(beta)])
         self.nu = N2B(self.eta).dot(nu_n)
+
+    def collide(self):
+        """
+        Not sure if this will be needed
+        """
+        pass
 
     def close(self):
         pygame.display.quit()
@@ -315,7 +356,7 @@ def test_simulator():
     # Initialize constants
     fps = 50
     eta_init = np.array([0, 0, 0, 0, 0, 0], float)
-    eta_d = np.array([10, 0, 0, 0, 0, 0], float)
+    eta_d = np.array([15-0.75-1, 0, 0, 0, 0, 0], float)
 
     # Initialize vehicle
     vehicle = Otter(dt=1/fps)

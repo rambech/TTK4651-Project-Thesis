@@ -1,39 +1,57 @@
 import pygame
 import numpy as np
-from .map import Map, Wall
+from .map import Map
+
+from utils import N2S2D, S2N2D, N2S
 
 # TODO: Make an outline of the goal position
 #       that is marked on the map
+# TODO: Change default values to be in meters,
+#       then transform to screen coordinates when needed. (It is the right thing to doß)
 
 
-class SimpleQuay():
-    def __init__(self, quay_width, quay_length, quay_pos: tuple[float, float]):
-        self.surf = pygame.Surface((quay_width, quay_length))
+class SimpleObs():
+    def __init__(self, length: float, width: float, pos: tuple[float, float], scale: float, origin: np.ndarray) -> None:
+
+        xy_s = N2S2D(pos, scale, origin)
+        self.surf = pygame.Surface((width*scale, length*scale))
+        self.surf.fill((0, 0, 0))
+        self.rect = self.surf.get_rect(center=(xy_s[0], xy_s[1]))
+        SE = (pos[0] + width/2, pos[1] + length/2)
+        SW = (pos[0] - width/2, pos[1] + length/2)
+        self.colliding_edge = (SW, SE)
+
+
+class SimpleQuay(SimpleObs):
+    def __init__(self, quay_length: float, quay_width: float, quay_pos: np.ndarray, scale: float, origin: np.ndarray) -> None:
+        super(SimpleQuay, self).__init__(
+            quay_length, quay_width, quay_pos, scale, origin)
         self.surf.fill((192, 192, 192))
-        self.rect = self.surf.get_rect(center=(quay_pos[0], quay_pos[1]))
 
 
 class SimpleMap(Map):
     # Map parameters
-    BOX_WIDTH = 700                     # [px]   Overall box width
-    BOX_LENGTH = 700                    # [px]   Overall box length
-    SCALE = 30                          # [px/m] pixels/meter
-    QUAY_SIZE_M = (10, 0.75)            # [m]
-    QUAY_SIZE = (QUAY_SIZE_M[0]*SCALE, QUAY_SIZE_M[1]*SCALE)
-    # [m]   x position of the center of quay
-    QUAY_X_POS = BOX_WIDTH/2
-    QUAY_Y_POS = 0 + QUAY_SIZE[1]/2     # [m]   given in screen coordinates
-    OCEAN_BLUE = (0, 157, 196)
+    MAP_SIZE = (30, 30)                 # [m]    Size of map
+    scale = 30                          # [px/m] pixels/meter
+    BOX_WIDTH = MAP_SIZE[0]*scale       # [px]   Overall box width
+    BOX_LENGTH = MAP_SIZE[1]*scale      # [px]   Overall box width
+    QUAY_SIZE = (0.75, 10)              # [m]
+    # [m] x position of the center of quay in NED
+    QUAY_POS = (MAP_SIZE[0]/2 - QUAY_SIZE[0]/2, 0)
+    OCEAN_BLUE = (0, 157, 196)          # [RGB]
     BACKGROUND_COLOR = OCEAN_BLUE
+
+    # [px, px, px] Screen offset
     origin = np.array([BOX_WIDTH/2, BOX_LENGTH/2, 0], float)
 
-    # Map obstacles
-    quay = SimpleQuay(QUAY_SIZE[0], QUAY_SIZE[1], (QUAY_X_POS, QUAY_Y_POS))
-    extra_wall_width = (BOX_WIDTH/2)-(QUAY_SIZE[0]/2)
-    extra_wall_east = Wall(extra_wall_width, QUAY_SIZE[1],
-                           (BOX_WIDTH-(extra_wall_width/2), QUAY_Y_POS))
-    extra_wall_west = Wall(extra_wall_width, QUAY_SIZE[1],
-                           (extra_wall_width/2, QUAY_Y_POS))
+    # Map obstacles defined in ned
+    quay = SimpleQuay(QUAY_SIZE[0], QUAY_SIZE[1],
+                      QUAY_POS, scale, origin)
+    extra_wall_width = MAP_SIZE[1]/2-QUAY_SIZE[1]/2
+    extra_wall_east = SimpleObs(
+        QUAY_SIZE[0], extra_wall_width, (QUAY_POS[0], MAP_SIZE[1]/2 - extra_wall_width/2), scale, origin)
+    extra_wall_west = SimpleObs(
+        QUAY_SIZE[0], extra_wall_width, (QUAY_POS[0], extra_wall_width/2 - MAP_SIZE[1]/2), scale, origin)
 
     # Weather
     SIDESLIP = 0  # 30           # [deg]
@@ -41,8 +59,7 @@ class SimpleMap(Map):
 
     def __init__(self) -> None:
         super(SimpleMap, self).__init__()
-        self.obstacles.append(self.extra_wall_east)
-        self.obstacles.append(self.extra_wall_west)
+        self.obstacles = [self.extra_wall_east, self.extra_wall_west]
 
 
 def test_map():

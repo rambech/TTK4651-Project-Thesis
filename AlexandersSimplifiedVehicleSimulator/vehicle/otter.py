@@ -20,6 +20,7 @@ from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, R2D, N2S
 
 
 # TODO: Add particle bursts from each thruster
+# TODO: Add a list of vertices for collision detection, in NED
 
 class Otter(Vehicle):
     """
@@ -308,6 +309,7 @@ class Otter(Vehicle):
         rotated_image = pygame.transform.rotate(
             self.vessel_image, -R2D(eta[-1])).convert_alpha()
         eta_s = N2S(eta, self.scale, offset)
+        # print(f"eta_s: {eta_s}")
         center = (eta_s[0], eta_s[1])
         rect = rotated_image.get_rect(center=center)
 
@@ -317,3 +319,41 @@ class Otter(Vehicle):
         u_control = self.Binv @ tau
 
         return u_control
+
+    def vertices(self, eta: np.ndarray) -> list:
+        """
+        Returns the vertices of the vehicle given its position
+
+        x_v^n = l * cos(psi + delta)
+        y_v^n = l * sin(psi + delta)
+
+        where psi is heading and delta is the angle between x_b
+        and the vertex
+
+        Parameters
+        ----------
+            eta : np.ndarray
+                Pose in {n}
+
+        Returns
+        -------
+            vertices : np.ndarray
+                Outer vertices of the vessel given in (x,y) in {n}
+        """
+
+        half_L = self.L/2
+        half_B = self.B/2
+        l = np.linalg.norm((half_L, half_B), 2)
+        psi_1 = eta[-1] + np.arctan2(half_B, half_L)
+        psi_2 = eta[-1] + np.arctan2(half_B, -half_L)
+        psi_3 = eta[-1] + np.arctan2(-half_B, -half_L)
+        psi_4 = eta[-1] + np.arctan2(-half_B, half_L)
+
+        forward_starboard = (eta[0]+l*np.cos(psi_1), eta[1]+l*np.sin(psi_1))
+        forward_port = (eta[0]+l*np.cos(psi_2), eta[1]+l*np.sin(psi_2))
+        aft_port = (eta[0]+l*np.cos(psi_3), eta[1]+l*np.sin(psi_3))
+        aft_starboard = (eta[0]+l*np.cos(psi_4), eta[1]+l*np.sin(psi_4))
+
+        vertices = [forward_starboard, forward_port, aft_port, aft_starboard]
+
+        return vertices
