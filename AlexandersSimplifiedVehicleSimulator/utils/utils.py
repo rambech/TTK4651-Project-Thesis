@@ -529,40 +529,55 @@ def S2N2D(eta_s_2D: tuple[float, float], scale: float, origin: np.ndarray) -> np
 # ------------------------------------------------------------------------------
 
 
-def D2L(edge: tuple[np.ndarray, np.ndarray], vertex: tuple[float, float]):
+def D2L(edge: tuple[tuple[float, float], tuple[float, float]], pos: np.ndarray) -> tuple[float, float]:
     """
-    Calculates distance from a point to a line
+    Calculates distance from a point to a line using vector projection
 
     Parameters
     ----------
-        edge : tuple[tuple[float, float]]
+        edge : tuple[tuple[float, float], tuple[float, float]]
             Points that make up the line
-        vertex : tuple[float, float]
+        pos: np.ndarray
             Point to calculate distance from
 
     Returns
     -------
         dist : float
-            Distance from vertex to edge
+            Distance from vessel to the closet point on the line
+        angle : float
+            Angle between (x_n,y_n) and the closest point on the line,
+            expressed in {n}
     """
 
-    # vector projection
-    # b = np.asarray(edge[1])
-    b = np.asarray(edge[1]) - np.asarray(edge[0])
-    a = np.asarray(vertex) - edge[0]
-    temp = a.dot(b)/np.linalg.norm(b, 2)
-    print(f"temp: {temp}")
-    proj = temp * b
-    dist = np.linalg.norm(proj-a, 2)
-    angle = R2D(np.arctan2(proj[1]-a[1], proj[0]-a[0]))
-    # x0 = vertex[0]
-    # y0 = vertex[1]
-    # x1 = edge[0][0]
-    # y1 = edge[0][1]
-    # x2 = edge[1][0]
-    # y2 = edge[1][1]
-    # dist = np.abs((x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1)) / \
-    #     np.linalg.norm(np.asarray(edge[1]) - np.asarray(edge[0]), 2)
+    # Make tuples into ndarrays for easier calculation
+    v1 = np.asarray(edge[0], float)
+    v2 = np.asarray(edge[1], float)
 
-    return angle, dist
+    a = pos - v1    # Vector from one vertex to the vessel
+    b = v2 - v1     # Vector making up the edge
+
+    # Projection from vessel down to the edge
+    proj = np.asarray(a.dot(b) / b.dot(b)).dot(b)
+
+    # Is projection on the edge
+    if 0 <= proj[0] <= b[0] and 0 <= proj[1] <= b[1]:
+        dist = np.linalg.norm(a - proj, 2)
+        angle = np.arctan2(proj[1] - a[1], proj[0] - a[0])
+
+    # Which vertex is closer to the vessel
+    elif np.linalg.norm(0 - a, 2) < np.linalg.norm(b - a, 2):
+        dist = np.linalg.norm(0 - a, 2)
+        angle = np.arctan2(0 - a[1], 0 - a[0])
+
+    else:
+        dist = np.linalg.norm(b - a, 2)
+        angle = np.arctan2(b[1] - a[1], b[0] - a[0])
+
+    return ssa(angle), dist
+
 # ------------------------------------------------------------------------------
+
+
+def is_between(lower, vertex, upper):
+
+    return lower[0] < vertex[0] < upper[0] and lower[1] < vertex[1] < upper[1]
