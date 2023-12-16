@@ -17,8 +17,8 @@ class SimpleObs():
         self.surf = pygame.Surface((width*scale, length*scale))
         self.surf.fill((0, 0, 0))
         self.rect = self.surf.get_rect(center=(xy_s[0], xy_s[1]))
-        SE = (pos[0] + width/2, pos[1] + length/2)
-        SW = (pos[0] - width/2, pos[1] + length/2)
+        SE = (pos[0] - length/2, pos[1] + width/2)
+        SW = (pos[0] - length/2, pos[1] - width/2)
         self.colliding_edge = (SW, SE)
 
 
