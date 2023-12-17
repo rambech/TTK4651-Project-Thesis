@@ -10,7 +10,7 @@ import pygame
 from .env import Env
 from vehicle import Vehicle, Otter
 from maps import SimpleMap, Target
-from utils import attitudeEuler
+from utils import attitudeEuler, D2L, D2R, N2B, B2N
 from rl.rewards import norm
 
 # TODO: Use SSA
@@ -18,18 +18,12 @@ from rl.rewards import norm
 # TODO: Make a docking threshold of some sort
 # TODO: Implement closest obstacle measure for the observation space
 # TODO: Implement distance and angle to closest point on the quay for the observation space
+# TODO: Visualise actuator usage
+# TODO: Optional: make observations into a dict
+# TODO: Add info dict
 
 # Environment parameters
-# BOX_WIDTH = 500                 # [m]   Overall box width
-# BOX_LENGTH = 500                # [m]   Overall box length
-# dt = 0.02                       # [s]   Sample time
 FPS = 50                          # [fps] Frames per second
-# QUAY_WIDTH = 100                # [m]
-# QUAY_LENGTH = 10                # [m]
-# QUAY_X_POS = BOX_WIDTH/2        # [m]   x position of the center of quay
-# QUAY_Y_POS = 0 + QUAY_LENGTH/2  # [m]   given in screen coordinates
-# OCEAN_BLUE = ((0, 157, 196))
-# ORIGO = (BOX_WIDTH/2, BOX_LENGTH/2)
 
 # I have chosen the origin of NED positon to be
 # in the middle of the screen. This means that
@@ -37,15 +31,9 @@ FPS = 50                          # [fps] Frames per second
 # NED ones, RL and everything else is calculated
 # in NED, only rendering happens in the other coordinates.
 
-# Observation space parameters
-N_max = 250         # [m]   Position x in NED
-N_min = -250        # [m]
-E_max = 250         # [m]   Position y in NED
-E_min = -250        # [m]
-
 # Weather
-SIDESLIP = 30           # [deg]
-CURRENT_MAGNITUDE = 3   # [0]
+# SIDESLIP = 30           # [deg]
+# CURRENT_MAGNITUDE = 3   # [0]
 
 
 class SimpleEnv(gym.Env):
@@ -55,7 +43,7 @@ class SimpleEnv(gym.Env):
         "render_fps": FPS,
     }
 
-    def __init__(self, vehicle: Otter, map: SimpleMap, target: Target, seed: int = None, eta_init=np.zeros(6, float),  docked_threshold=[1, 10]) -> None:
+    def __init__(self, vehicle: Otter, map: SimpleMap, target: Target, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  docked_threshold=[1, D2R(10)]) -> None:
         super(SimpleEnv, self).__init__()
         """
         Initialises SimpleEnv() object
@@ -63,70 +51,107 @@ class SimpleEnv(gym.Env):
 
         self.vehicle = vehicle
         self.map = map
+        self.target = target
         self.fps = FPS
+        self.metadata["render_fps"] = FPS
         self.dt = 1/FPS
+        self.bounds = self.map.bounds
+        self.edges = self.map.colliding_edges
+        self.closest_edge = ((0, 0), (0, 0))
+        self.eta_d = self.target.eta_d
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
 
         # Initial conditions
-        self.eta_init = eta_init.copy()  # Save initial pose
-        self.eta = eta_init              # Initialize pose
-        self.nu = np.zeros(6, float)     # Init velocity
-        self.u = np.zeros(2, float)      # Init control vector
+        if seed is not None:
+            # Make random initial condition and weather
+            pass
+
+        else:
+            # Use default initial conditions and weather
+            self.eta_init = eta_init.copy()  # Save initial pose
+            self.eta = eta_init              # Initialize pose
+            self.nu = np.zeros(6, float)     # Init velocity
+            self.u = np.zeros(2, float)      # Init control vector
+            self.V_c = self.map.CURRENT_MAGNITUDE
+            self.beta_c = self.map.SIDESLIP
 
         # Action space is given through super init
+        N_min, E_min, N_max, E_max = self.bounds
         self.eta_max = np.array([N_max, E_max, vehicle.limits["psi_max"]])
         self.eta_min = np.array([N_min, E_min, vehicle.limits["psi_min"]])
         self.nu_max = vehicle.limits["nu_max"]
         self.nu_min = vehicle.limits["nu_min"]
-        # List of maximum actuator output
-        u_max = vehicle.limits["u_max"]
-        # List of minimum actuator output
-        u_min = vehicle.limits["u_min"]
+        # # List of maximum actuator output
+        # u_max = vehicle.limits["u_max"]
+        # # List of minimum actuator output
+        # u_min = vehicle.limits["u_min"]
+
+        # Maximum distance and angle to quay
+        d_q_max = np.linalg.norm(np.asarray(
+            self.bounds[2:]) - np.asarray(self.bounds[:2]), 2)
+        psi_q_max = np.pi
+        psi_q_min = -psi_q_max
+
+        # Maximum distance and angle to obstacle
+        d_o_max = d_q_max
+        psi_o_max = psi_q_max
+        psi_o_min = psi_q_min
 
         upper = np.concatenate(
-            (self.eta_max, self.nu_max, u_max), axis=None).astype(np.float32)
+            (self.eta_max, self.nu_max, d_q_max, psi_q_max, d_o_max, psi_o_max), axis=None).astype(np.float32)
         lower = np.concatenate(
-            (self.eta_min, self.nu_min, u_min), axis=None).astype(np.float32)
+            (self.eta_min, self.nu_min, 0, psi_q_min, 0, psi_o_min), axis=None).astype(np.float32)
 
-        self.observation_space = spaces.Box(lower, upper, (upper.size,))
+        self.observation_size = (upper.size,)
+
+        self.observation_space = spaces.Box(
+            lower, upper, self.observation_size)
         self.action_space = vehicle.action_space
 
         # Add target
         self.target = target
         self.thres = docked_threshold
 
-        # Initialize pygame
-        pygame.init()
-        pygame.display.set_caption("Otter RL")
-        self.clock = pygame.time.Clock()
+        if self.render_mode == "human":
+            # Initialize pygame
+            pygame.init()
+            pygame.display.set_caption("Otter RL")
+            self.clock = pygame.time.Clock()
 
-        # Make a screen and fill it with a background colour
-        self.screen = pygame.display.set_mode(
-            [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
-        self.screen.fill(self.map.OCEAN_BLUE)
+            # Make a screen and fill it with a background colour
+            self.screen = pygame.display.set_mode(
+                [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
+            self.screen.fill(self.map.OCEAN_BLUE)
+            # self.particles = []
+
+        # Add quay
         self.quay = self.map.quay
 
-        # For render
-        self.isopen = True
-        self.moving_obstacles: list = None
-        # self.lander: Optional[Box2D.b2Body] = None # Is swapped out for self.vehicle
-        self.particles = []
-
     def reset(self, seed=None):
-        self.nu = self.vehicle.nu
-        self.eta = self.vehicle.eta
-        self.u = self.vehicle.u
+        # if seed is not None:
+        #     pass
+        # else:
+        #     self.eta = self.eta_init.copy()
+        self.eta = self.eta_init.copy()
+        self.nu = np.zeros(6, float)
+        self.u = np.zeros(2, float)
 
-        self.dt = self.vehicle.dt
         self.has_crashed = False
         self.has_docked = False
+        self.dock_timer = 0
 
-        observation = np.zeros((12, 1)).astype(np.float32)
+        observation = self.get_observation()
         info = {}
+
+        if self.render_mode == "human":
+            self.render()
 
         return observation, info
 
     def step(self, action):
-        beta_c, V_c = self.current()
+        beta_c, V_c = self.current_force()
 
         self.nu, self.u = self.vehicle.rl_step(
             self.eta, self.nu, self.u, action, beta_c, V_c)
@@ -141,9 +166,11 @@ class SimpleEnv(gym.Env):
         else:
             terminated = False
 
-        reward = norm(self.eta, self.nu, self.has_crashed, self.has_docked)
-        observation = [self.eta.tolist +
-                       self.nu.tolist + self.u.tolist] + list()
+        reward = norm(self.eta, self.eta_d, self.has_crashed, self.has_docked)
+        observation = self.get_observation()
+
+        if self.render_mode == "human":
+            self.render()
 
         truncated = False
         info = {}
@@ -155,71 +182,132 @@ class SimpleEnv(gym.Env):
         the vehicle and map/environment
         """
 
-        if self.window is None and self.render_mode == "human":
+        if not self.screen and self.render_mode == "human":
+            # Initialize pygame
             pygame.init()
-            pygame.display.init()
-            self.window = pygame.display.set_mode(
-                (self.map.BOX_WIDTH, self.map.BOX_LENGTH)
-            )
+            pygame.display.set_caption("Otter RL")
+            self.clock = pygame.time.Clock()
+
+            # Make a screen and fill it with a background colour
+            self.screen = pygame.display.set_mode(
+                [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
 
         self.screen.fill(self.map.OCEAN_BLUE)
-        bounds = []
 
-        # Add outer bounds of map
+        # Render obstacles
         for obstacle in self.map.obstacles:
-            bounds.append(obstacle.rect)
             self.screen.blit(obstacle.surf, obstacle.rect)
 
-        # List of bounds
-        self.bounds = bounds
-
         # Render target pose to screen
-        if self.target != None:
-            self.screen.blit(self.target.image, self.target.rect)
+        self.screen.blit(self.target.image, self.target.rect)
 
         # Render quay to screen
         self.screen.blit(self.quay.surf, self.quay.rect)
 
         # Render vehicle to screen
-        if self.vehicle != None:
-            vessel_image, self.vessel_rect = self.vehicle.render(
-                self.eta, self.map.origin)
-            self.screen.blit(vessel_image, self.vessel_rect)
+        vessel_image, self.vessel_rect = self.vehicle.render(
+            self.eta, self.map.origin)
+        self.screen.blit(vessel_image, self.vessel_rect)
 
-            # Speedometer
-            U = np.linalg.norm(self.nu[0:2], 2)
-            font = pygame.font.SysFont("Times New Roman", 12)
-            speed = font.render(f"SOG: {np.round(U, 2)} [m/s]", 1, (0, 0, 0))
-            self.screen.blit(speed, (10, self.map.BOX_LENGTH-20))
+        # Speedometer
+        U = np.linalg.norm(self.nu[0:2], 2)
+        font = pygame.font.SysFont("Times New Roman", 12)
+        speed = font.render(
+            f"SOG: {np.round(U, 2)} [m/s]", 1, (0, 0, 0))
+        self.screen.blit(speed, (10, self.map.BOX_LENGTH-20))
 
-            # Position
-            x = np.round(self.eta[0])
-            y = np.round(self.eta[1])
-            position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
-            self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
+        # Position
+        x = np.round(self.eta[0])
+        y = np.round(self.eta[1])
+        position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
+        self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
 
+        # Thruster revolutions
+        n1 = np.round(self.u[0])
+        n2 = np.round(self.u[1])
+        rpm = font.render(f"THR: ({n1}, {n2} [%])", 1, (0, 0, 0))
+        self.screen.blit(rpm, (10, self.map.BOX_LENGTH-44))
+
+        pygame.event.pump()
         pygame.display.flip()
         self.clock.tick(self.fps)
 
     def close(self):
-        pygame.display.quit()
-        pygame.quit()
+        if self.screen:
+            pygame.display.quit()
+            pygame.quit()
 
-        self.isopen = False
+        # self.isopen = False
+
+    def get_observation(self):
+        planar_eta = np.concatenate((self.eta[0:2], self.eta[-1]), axis=None)
+        d_q, psi_q = self.direction_and_angle_to_quay()
+        d_o, psi_o = self.direction_and_angle_to_obs()
+
+        return np.concatenate((planar_eta, self.nu[0:3], d_q, psi_q, d_o, psi_o),
+                              axis=None).astype(np.float32)
 
     def crashed(self) -> bool:
-        if (abs(self.eta[0]) >= self.eta_max[0] or abs(self.eta[1]) >= self.eta_max[1]):
-            return True
-        else:
-            return False
+        for corner in self.vehicle.corners(self.eta):
+            _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
+            _, dist_corner_obs = D2L(self.closest_edge, corner)
+            if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
+                return True
+            elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
+                return True
+            elif dist_corner_quay < 0.01:
+                self.bump()
+            else:
+                continue
+
+        return False
 
     def docked(self) -> bool:
-        if (np.linalg.norm(self.eta_d[0:1] - self.eta[0:1]) <= self.thres[0] and abs(self.eta_d[2] - self.eta[2]) <= self.thres[1]):
+        if (np.linalg.norm(self.eta_d[0:1] - self.eta[0:1]) <= self.thres[0] and abs(self.eta_d[-1] - self.eta[-1]) <= self.thres[1]):
             return True
         else:
             return False
 
-    def current(self) -> tuple[float, float]:
+    def bump(self):
+        """
+        Simulates a fully elastic collision between the quay and the vessel
+        """
+
+        # Transform nu from {b} to {n}
+        nu_n = B2N(self.eta).dot(self.nu)
+
+        # Send the vessel back with the same speed it came in
+        U_n = np.linalg.norm(nu_n[0:3], 3)
+        min_U_n = -U_n
+
+        # Necessary angles
+        beta = np.arctan(nu_n[2]/nu_n[0])   # Sideslip
+        alpha = np.arcsin(nu_n[1]/min_U_n)  # Angle of attack
+
+        nu_n[0:3] = np.array([min_U_n*np.cos(alpha)*np.cos(beta),
+                              min_U_n*np.sin(beta),
+                              min_U_n*np.sin(alpha)*np.cos(beta)])
+        self.nu = N2B(self.eta).dot(nu_n)
+
+    def direction_and_angle_to_obs(self):
+        angle = 0
+        dist = np.inf
+        for edge in self.edges:
+            bearing, range = D2L(edge, self.eta[0:2])
+            if range < dist:
+                angle = bearing - self.eta[-1]
+                dist = range
+                self.closest_edge = edge
+
+        return dist, angle
+
+    def direction_and_angle_to_quay(self):
+        bearing, dist = D2L(self.quay.colliding_edge, self.eta[0:2])
+        angle = bearing - self.eta[-1]
+
+        return dist, angle
+
+    def current_force(self) -> tuple[float, float]:
         """
         Three modes, random changing, keystroke and random static
 
@@ -246,4 +334,4 @@ class SimpleEnv(gym.Env):
             beta_c, V_c : tuple[float, float]
                 Angle and magnitude of current
         """
-        pass
+        return 0.0, 0.0

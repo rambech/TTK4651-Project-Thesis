@@ -1,1 +1,1 @@
-import env
+from rl.env import *

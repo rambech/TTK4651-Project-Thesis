@@ -1,8 +1,20 @@
 from rl.env import SimpleEnv
 from vehicle import Otter
+import numpy as np
+from maps import SimpleMap, Target
 
-vehicle = Otter()
-env = SimpleEnv(vehicle)
+# Initialize constants
+fps = 50
+eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+eta_d = np.array([15-0.75-1, 0, 0, 0, 0, 0], float)
+
+# Initialize vehicle
+vehicle = Otter(dt=1/fps)
+
+map = SimpleMap()
+target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
+env = SimpleEnv(vehicle, map, target, render_mode="human")
+
 episodes = 50
 
 for episode in range(episodes):

@@ -19,8 +19,8 @@ from .vehicle import Vehicle
 from utils import Smtrx, Hmtrx, Rzyx, m2c, crossFlowDrag, sat, R2D, N2S
 
 
+# TODO: Normalise action space to low=-1, high=1
 # TODO: Add particle bursts from each thruster
-# TODO: Add a list of vertices for collision detection, in NED
 
 class Otter(Vehicle):
     """
@@ -38,7 +38,7 @@ class Otter(Vehicle):
         u_max = 3.08667
         u_min = -3.08667    # [m/s]
         # [m/s] Linear velocity in y (sway) direction, body frame
-        v_max = u_max/2
+        v_max = u_max
         # [m/s] Just a guess, have no clue of what to put here
         v_min = -v_max
         r_max = psi_max*dt  # [rad/s] Heading rate
@@ -52,18 +52,18 @@ class Otter(Vehicle):
                        "psi_min": -2*np.pi,
                        "nu_max": nu_max,
                        "nu_min": nu_min,
-                       "u_max": [1.0, 1.0],
-                       "u_min": [-1.0, -1.0]}
+                       "u_max": [113.0, 113.0],
+                       "u_min": [-111.0, -111.0]}
 
         # Action space for the otter is +-100%
         self.action_space = spaces.Box(
             low=-1.0, high=1.0, shape=(2,), seed=seed)
 
-        self.nu = np.zeros(6, float)    # velocity vector
-        self.eta = np.zeros(6, float)   # position vector
+        # self.nu = np.zeros(6, float)    # velocity vector
+        # self.eta = np.zeros(6, float)   # position vector
 
         # propeller revolution states
-        self.u_feedback = np.zeros(2, float)
+        # self.u_feedback = np.zeros(2, float)
         self.name = "Otter USV (see 'otter.py' for more details)"
 
         self._init_model()
@@ -209,6 +209,10 @@ class Otter(Vehicle):
         Normal step method for simulation
         """
         u_control = self.unconstrained_allocation(tau_d)
+
+        # Normalise to make it go up
+        u_control = self._normalise(u_control)
+
         nu, u = self.rl_step(
             eta, nu, prev_u, u_control, beta_c, V_c)
 
@@ -220,6 +224,9 @@ class Otter(Vehicle):
         [nu,u_feedback] = rl_step(eta,nu,u_feedback,action,beta_c,V_c) integrates
         the Otter USV equations of motion using Euler's method.
         """
+        # Denormalise from rl
+        action = self._denormalise(action)
+
         # Input vector
         n = np.array([prev_u[0], prev_u[1]])
 
@@ -356,3 +363,23 @@ class Otter(Vehicle):
         corners = [forward_starboard, forward_port, aft_port, aft_starboard]
 
         return corners
+
+    def _normalise(self, u):
+        action = np.zeros(2).astype(np.float32)
+        for idx, n in enumerate(u):
+            if n < 0:
+                action[idx] = (n/111)
+            else:
+                action[idx] = (n/113)
+
+        return action
+
+    def _denormalise(self, action):
+        u = np.zeros(2).astype(np.float32)
+        for idx, n in enumerate(action):
+            if n < 0:
+                u[idx] = n*111
+            else:
+                u[idx] = n*113
+
+        return u

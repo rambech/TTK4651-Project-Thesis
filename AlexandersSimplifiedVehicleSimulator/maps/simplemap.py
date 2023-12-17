@@ -44,6 +44,10 @@ class SimpleMap(Map):
     # [px, px, px] Screen offset
     origin = np.array([BOX_WIDTH/2, BOX_LENGTH/2, 0], float)
 
+    # Outer bounds of the map
+    bounds = [-MAP_SIZE[0]/2, -MAP_SIZE[1]/2,
+              MAP_SIZE[0]/2, MAP_SIZE[1]/2]
+
     # Map obstacles defined in ned
     quay = SimpleQuay(QUAY_SIZE[0], QUAY_SIZE[1],
                       QUAY_POS, scale, origin)
@@ -60,6 +64,11 @@ class SimpleMap(Map):
     def __init__(self) -> None:
         super(SimpleMap, self).__init__()
         self.obstacles = [self.extra_wall_east, self.extra_wall_west]
+        colliding_edges = []
+        for obstacle in self.obstacles:
+            colliding_edges.append(obstacle.colliding_edge)
+
+        self.colliding_edges = colliding_edges
 
 
 def test_map():

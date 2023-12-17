@@ -35,7 +35,6 @@ from pygame.locals import (
 
 # TODO: Add comments
 # TODO: Add function/method descriptions
-# TODO: Terminate if vessel is outside eta limits
 
 
 class Simulator():
@@ -142,6 +141,7 @@ class Simulator():
                        (map.MAP_SIZE[0]/2, map.MAP_SIZE[1]/2)]
         self.edges = []
         self.corner = []
+        self.closest_edge = ((0, 0), (0, 0))
         self.see_edges = False  # Turn edges and vertices off or on
         self.render()
 
@@ -217,26 +217,30 @@ class Simulator():
                         # Angle between bow and obstacle
                         angle = bearing - self.eta[-1]
                         dist = range
-                        closest_edge = edge
+                        self.closest_edge = edge
 
                 # End simulation if out of bounds
-                for corner in self.corner:
-                    _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
-                    _, dist_corner_obs = D2L(closest_edge, corner)
-                    if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
-                        running = False
+                # for corner in self.corner:
+                #     _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
+                #     _, dist_corner_obs = D2L(closest_edge, corner)
+                #     if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
+                #         running = False
 
-                    elif dist_corner_quay < 0.01:
-                        self.bump()
+                #     elif dist_corner_quay < 0.01:
+                #         self.bump()
 
-                    elif not is_between(self.bounds[0], corner, self.bounds[1]):
-                        running = False
-                        out_of_bounds = True
+                #     elif not is_between(self.bounds[0], corner, self.bounds[1]):
+                #         running = False
+                #         out_of_bounds = True
 
-                    else:
-                        continue
+                #     else:
+                #         continue
+                #     break
 
-                    break
+                if self.crashed():
+                    running = False
+                else:
+                    running = True
 
                 # print(
                 #     f"Obstacle: \n    Distance: {np.round(dist, 2)} [m] \n   Angle: {np.round(R2D(angle), 2)} [degrees]")
@@ -309,6 +313,12 @@ class Simulator():
             position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
             self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
 
+            # Thruster revolutions
+            n1 = np.round(self.u[0])
+            n2 = np.round(self.u[1])
+            rpm = font.render(f"THR: ({n1}, {n2} [%])", 1, (0, 0, 0))
+            self.screen.blit(rpm, (10, self.map.BOX_LENGTH-44))
+
             if self.see_edges:
                 for corner in self.corner:
                     corner_n = np.array([corner[0], corner[1], 0, 0, 0, 0])
@@ -326,6 +336,19 @@ class Simulator():
 
         pygame.display.flip()
         self.clock.tick(self.fps)
+
+    def crashed(self) -> bool:
+        for corner in self.vehicle.corners(self.eta):
+            _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
+            _, dist_corner_obs = D2L(self.closest_edge, corner)
+            if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
+                return True
+            elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
+                return True
+            elif dist_corner_quay < 0.01:
+                self.bump()
+            else:
+                continue
 
     def bump(self):
         """
