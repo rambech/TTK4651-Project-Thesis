@@ -19,7 +19,7 @@ import pygame
 from vehicle import Otter
 from maps import SimpleMap, Target
 import numpy as np
-from utils import attitudeEuler, B2N, N2B, N2S, D2L
+from utils import attitudeEuler, B2N, N2B, N2S, N2S2D, D2L, is_between, R2D
 
 # Keystroke inputs
 from pygame.locals import (
@@ -138,9 +138,11 @@ class Simulator():
 
         # Initialize hitboxes
         self.vessel_rect = self.vehicle.vessel_image.get_rect()
-        self.bounds = []
+        self.bounds = [(-map.MAP_SIZE[0]/2, -map.MAP_SIZE[1]/2),
+                       (map.MAP_SIZE[0]/2, map.MAP_SIZE[1]/2)]
         self.edges = []
-        self.vertices = []
+        self.corner = []
+        self.see_edges = False  # Turn edges and vertices off or on
         self.render()
 
     def simulate(self):
@@ -201,33 +203,43 @@ class Simulator():
                 # Manual force input
                 tau_d = np.array([X, N])
 
-                if self.vessel_rect.colliderect(self.quay.rect):
-                    # Stop simulation if the quay is hit too hard
-                    if np.linalg.norm(self.nu[0:3], 3) > 0.5:
-                        # running = False
-                        self.bump()
-
-                    # Otherwise bump
-                    else:
-                        self.bump()
+                # Distance and angle from CO to quay
+                bearing_q, dist_q = D2L(
+                    self.quay.colliding_edge, self.eta[0:2])
+                angle_q = bearing_q - self.eta[-1]
 
                 angle = 0
                 dist = np.inf
-                # End simulation if out of bounds
-                for bound in self.bounds:
-                    # for vertex in self.vertices:
-                    #     bearing, range = D2L(self.edges, vertex)
-                    #     if range < dist:
-                    #         angle = bearing
-                    #         dist = range
+                closest_edge = ((0, 0), (0, 0))
+                for edge in self.edges:
+                    bearing, range = D2L(edge, self.eta[0:2])
+                    if range < dist:
+                        # Angle between bow and obstacle
+                        angle = bearing - self.eta[-1]
+                        dist = range
+                        closest_edge = edge
 
-                    if self.vessel_rect.colliderect(bound):
-                        out_of_bounds = True
+                # End simulation if out of bounds
+                for corner in self.corner:
+                    _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
+                    _, dist_corner_obs = D2L(closest_edge, corner)
+                    if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
                         running = False
 
-                # print(f"Obstacle: \n \
-                #         Distance: {np.round(dist)} [m] \n \
-                #         Angle:    {np.round(angle)} [degrees]")
+                    elif dist_corner_quay < 0.01:
+                        self.bump()
+
+                    elif not is_between(self.bounds[0], corner, self.bounds[1]):
+                        running = False
+                        out_of_bounds = True
+
+                    else:
+                        continue
+
+                    break
+
+                # print(
+                #     f"Obstacle: \n    Distance: {np.round(dist, 2)} [m] \n   Angle: {np.round(R2D(angle), 2)} [degrees]")
 
                 # Step vehicle simulation
                 if not out_of_bounds:
@@ -252,7 +264,7 @@ class Simulator():
             self.eta, self.nu, self.u, tau_d, self.map.SIDESLIP, self.map.CURRENT_MAGNITUDE)
         # Kinematic step
         self.eta = attitudeEuler(self.eta, self.nu, self.dt)
-        self.vertices = self.vehicle.vertices(self.eta)
+        self.corner = self.vehicle.corners(self.eta)
 
     def render(self):
         """
@@ -261,17 +273,13 @@ class Simulator():
         """
 
         self.screen.fill(self.map.OCEAN_BLUE)
-        bounds = []
         edges = []
 
         # Add outer bounds of map
         for obstacle in self.map.obstacles:
-            bounds.append(obstacle.rect)
             self.screen.blit(obstacle.surf, obstacle.rect)
             edges.append(obstacle.colliding_edge)
 
-        # List of bounds
-        self.bounds = bounds
         self.edges = edges
 
         # Render target pose to screen
@@ -280,8 +288,6 @@ class Simulator():
 
         # Render quay to screen
         self.screen.blit(self.quay.surf, self.quay.rect)
-
-        #
 
         # Render vehicle to screen
         if self.vehicle != None:
@@ -303,16 +309,20 @@ class Simulator():
             position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
             self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
 
-            for vertex in self.vertices:
-                vertex_n = np.array([vertex[0], vertex[1], 0, 0, 0, 0])
-                vertex_s = N2S(vertex_n, self.vehicle.scale, self.map.origin)
-                pygame.draw.circle(self.screen, (255, 26, 117),
-                                   (vertex_s[0], vertex_s[1]), 2)
+            if self.see_edges:
+                for corner in self.corner:
+                    corner_n = np.array([corner[0], corner[1], 0, 0, 0, 0])
+                    corner_s = N2S(corner_n, self.vehicle.scale,
+                                   self.map.origin)
+                    pygame.draw.circle(self.screen, (255, 26, 117),
+                                       (corner_s[0], corner_s[1]), 2)
 
-            for edge in self.edges:
-                # vertex_1_n = np.
-                pygame.draw.line(self.screen, (255, 26, 117),
-                                 edge[0], edge[1], 2)
+                pygame.draw.line(self.screen, (136, 77, 255),
+                                 N2S2D(self.quay.colliding_edge[0], self.map.scale, self.map.origin), N2S2D(self.quay.colliding_edge[1], self.map.scale, self.map.origin), 2)
+
+                for edge in self.edges:
+                    pygame.draw.line(self.screen, (255, 26, 117),
+                                     N2S2D(edge[0], self.map.scale, self.map.origin), N2S2D(edge[1], self.map.scale, self.map.origin), 2)
 
         pygame.display.flip()
         self.clock.tick(self.fps)
@@ -337,6 +347,10 @@ class Simulator():
                               min_U_n*np.sin(beta),
                               min_U_n*np.sin(alpha)*np.cos(beta)])
         self.nu = N2B(self.eta).dot(nu_n)
+
+    def out_of_bounds(self, vertex):
+        return vertex[0] <= self.bounds[0][0] or vertex[1] <= self.bounds[0][1] or \
+            vertex[0] >= self.bounds[1][0] or vertex[1] >= self.bounds[1][1]
 
     def collide(self):
         """

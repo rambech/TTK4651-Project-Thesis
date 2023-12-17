@@ -309,7 +309,6 @@ class Otter(Vehicle):
         rotated_image = pygame.transform.rotate(
             self.vessel_image, -R2D(eta[-1])).convert_alpha()
         eta_s = N2S(eta, self.scale, offset)
-        # print(f"eta_s: {eta_s}")
         center = (eta_s[0], eta_s[1])
         rect = rotated_image.get_rect(center=center)
 
@@ -320,15 +319,15 @@ class Otter(Vehicle):
 
         return u_control
 
-    def vertices(self, eta: np.ndarray) -> list:
+    def corners(self, eta: np.ndarray) -> list:
         """
-        Returns the vertices of the vehicle given its position
+        Returns the corners of the vehicle given its position
 
         x_v^n = l * cos(psi + delta)
         y_v^n = l * sin(psi + delta)
 
         where psi is heading and delta is the angle between x_b
-        and the vertex
+        and the corners
 
         Parameters
         ----------
@@ -337,8 +336,8 @@ class Otter(Vehicle):
 
         Returns
         -------
-            vertices : np.ndarray
-                Outer vertices of the vessel given in (x,y) in {n}
+            corners : np.ndarray
+                Outer corners of the vessel given in (x,y) in {n}
         """
 
         half_L = self.L/2
@@ -354,6 +353,6 @@ class Otter(Vehicle):
         aft_port = (eta[0]+l*np.cos(psi_3), eta[1]+l*np.sin(psi_3))
         aft_starboard = (eta[0]+l*np.cos(psi_4), eta[1]+l*np.sin(psi_4))
 
-        vertices = [forward_starboard, forward_port, aft_port, aft_starboard]
+        corners = [forward_starboard, forward_port, aft_port, aft_starboard]
 
-        return vertices
+        return corners
