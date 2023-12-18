@@ -26,6 +26,7 @@ class SimpleQuay(SimpleObs):
     def __init__(self, quay_length: float, quay_width: float, quay_pos: np.ndarray, scale: float, origin: np.ndarray) -> None:
         super(SimpleQuay, self).__init__(
             quay_length, quay_width, quay_pos, scale, origin)
+        self.length = quay_length
         self.surf.fill((192, 192, 192))
 
 

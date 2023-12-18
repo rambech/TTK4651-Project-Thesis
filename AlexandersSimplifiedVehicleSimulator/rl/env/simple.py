@@ -10,7 +10,8 @@ import pygame
 from .env import Env
 from vehicle import Vehicle, Otter
 from maps import SimpleMap, Target
-from utils import attitudeEuler, D2L, D2R, N2B, B2N
+from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa
+
 from rl.rewards import norm
 
 # TODO: Use SSA
@@ -54,11 +55,14 @@ class SimpleEnv(gym.Env):
         self.target = target
         self.fps = FPS
         self.metadata["render_fps"] = FPS
-        self.dt = 1/FPS
+        self.dt = self.vehicle.dt
         self.bounds = self.map.bounds
         self.edges = self.map.colliding_edges
         self.closest_edge = ((0, 0), (0, 0))
         self.eta_d = self.target.eta_d
+
+        # Add quay
+        self.quay = self.map.quay
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -66,7 +70,9 @@ class SimpleEnv(gym.Env):
         # Initial conditions
         if seed is not None:
             # Make random initial condition and weather
-            pass
+            self.seed = seed
+            np.random.seed(seed)
+            self.eta = self.random_eta()
 
         else:
             # Use default initial conditions and weather
@@ -126,15 +132,13 @@ class SimpleEnv(gym.Env):
             self.screen.fill(self.map.OCEAN_BLUE)
             # self.particles = []
 
-        # Add quay
-        self.quay = self.map.quay
-
     def reset(self, seed=None):
-        # if seed is not None:
-        #     pass
-        # else:
-        #     self.eta = self.eta_init.copy()
-        self.eta = self.eta_init.copy()
+        if self.seed is not None:
+            self.eta = self.random_eta()
+        else:
+            self.eta = self.eta_init.copy()
+
+        # self.eta = self.eta_init.copy()
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
@@ -153,9 +157,17 @@ class SimpleEnv(gym.Env):
     def step(self, action):
         beta_c, V_c = self.current_force()
 
-        self.nu, self.u = self.vehicle.rl_step(
-            self.eta, self.nu, self.u, action, beta_c, V_c)
-        self.eta = attitudeEuler(self.eta, self.nu, self.dt)
+        # Simulate vehicle at a higher rate than the RL step
+        step_rate = 1/(self.dt*self.fps)
+        assert (
+            step_rate % 1 == 0
+        ), f"Step rate must be a positive integer, got {step_rate}. \
+            Make sure the vehicle FPS is a multiple of the RL FPS"
+
+        for _ in range(int(step_rate)):
+            self.nu, self.u = self.vehicle.rl_step(
+                self.eta, self.nu, self.u, action, beta_c, V_c)
+            self.eta = attitudeEuler(self.eta, self.nu, self.dt)
 
         if self.crashed():
             terminated = True
@@ -335,3 +347,13 @@ class SimpleEnv(gym.Env):
                 Angle and magnitude of current
         """
         return 0.0, 0.0
+
+    def random_eta(self):
+        padding = 2  # [m]
+        x_init = np.random.uniform(
+            self.bounds[0] + padding, self.bounds[2] - self.quay.length - padding)
+        y_init = np.random.uniform(
+            self.bounds[0] + padding, self.bounds[2] - padding)
+        psi_init = ssa(np.random.uniform(-np.pi, np.pi))
+
+        return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
