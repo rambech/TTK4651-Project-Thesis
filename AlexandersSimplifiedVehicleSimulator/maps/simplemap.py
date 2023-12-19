@@ -32,10 +32,10 @@ class SimpleQuay(SimpleObs):
 
 class SimpleMap(Map):
     # Map parameters
-    MAP_SIZE = (30, 30)                 # [m]    Size of map
+    MAP_SIZE = (25, 30)                 # [m]    Size of map
     scale = 30                          # [px/m] pixels/meter
-    BOX_WIDTH = MAP_SIZE[0]*scale       # [px]   Overall box width
-    BOX_LENGTH = MAP_SIZE[1]*scale      # [px]   Overall box width
+    BOX_WIDTH = MAP_SIZE[1]*scale       # [px]   Overall box width
+    BOX_LENGTH = MAP_SIZE[0]*scale      # [px]   Overall box width
     QUAY_SIZE = (0.75, 10)              # [m]
     # [m] x position of the center of quay in NED
     QUAY_POS = (MAP_SIZE[0]/2 - QUAY_SIZE[0]/2, 0)

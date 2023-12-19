@@ -542,11 +542,11 @@ def D2L(edge: tuple[tuple[float, float], tuple[float, float]], pos: np.ndarray) 
 
     Returns
     -------
-        dist : float
-            Distance from vessel to the closet point on the line
         angle : float
             Angle between (x_n,y_n) and the closest point on the line,
             expressed in {n}
+        dist : float
+            Distance from vessel to the closet point on the line
     """
 
     # Make tuples into ndarrays for easier calculation

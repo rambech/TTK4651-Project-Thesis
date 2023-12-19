@@ -19,7 +19,7 @@ import pygame
 from vehicle import Otter
 from maps import SimpleMap, Target
 import numpy as np
-from utils import attitudeEuler, B2N, N2B, N2S, N2S2D, D2L, is_between, R2D
+from utils import attitudeEuler, B2N, N2B, N2S, N2S2D, D2L, ssa, R2D
 
 # Keystroke inputs
 from pygame.locals import (
@@ -35,6 +35,9 @@ from pygame.locals import (
 
 # TODO: Add comments
 # TODO: Add function/method descriptions
+# TODO: Visualise 100 samples from init
+# TODO: Test random eta_init generator by displaying many points
+# TODO: Make simulator look more like
 
 
 class Simulator():
@@ -112,12 +115,19 @@ class Simulator():
 
         self.vehicle = vehicle
         self.map = map
+        self.quay = self.map.quay
         self.fps = fps
         self.dt = 1/self.fps
+        self.seed = 1
+        self.eta_d = target.eta_d
 
         # Initial conditions
-        self.eta_init = eta_init.copy()  # Save initial pose
-        self.eta = eta_init              # Initialize pose
+        if self.seed is not None:
+            self.eta = self.random_eta()
+        else:
+            self.eta_init = eta_init.copy()  # Save initial pose
+            self.eta = eta_init              # Initialize pose
+
         self.nu = np.zeros(6, float)     # Init velocity
         self.u = np.zeros(2, float)      # Init control vector
 
@@ -130,7 +140,6 @@ class Simulator():
         self.screen = pygame.display.set_mode(
             [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
         self.screen.fill(self.map.OCEAN_BLUE)
-        self.quay = self.map.quay
 
         # Add target
         self.target = target
@@ -139,6 +148,9 @@ class Simulator():
         self.vessel_rect = self.vehicle.vessel_image.get_rect()
         self.bounds = [(-map.MAP_SIZE[0]/2, -map.MAP_SIZE[1]/2),
                        (map.MAP_SIZE[0]/2, map.MAP_SIZE[1]/2)]
+        N_min, E_min, N_max, E_max = self.map.bounds
+        self.eta_max = np.array([N_max, E_max, vehicle.limits["psi_max"]])
+        self.eta_min = np.array([N_min, E_min, vehicle.limits["psi_min"]])
         self.edges = []
         self.corner = []
         self.closest_edge = ((0, 0), (0, 0))
@@ -187,8 +199,12 @@ class Simulator():
                     # Go back to start
                     if event.key == K_TAB:
                         # Go back to initial condition
-                        # Note: use copy() when copying arrays
-                        self.eta = self.eta_init.copy()
+                        if self.seed is not None:
+                            self.eta = self.random_eta()
+                        else:
+                            # Note: use copy() when copying arrays
+                            self.eta = self.eta_init.copy()
+
                         self.nu = np.zeros(6, float)
                         self.u = np.zeros(2, float)
                 else:
@@ -219,31 +235,22 @@ class Simulator():
                         dist = range
                         self.closest_edge = edge
 
-                # End simulation if out of bounds
-                # for corner in self.corner:
-                #     _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
-                #     _, dist_corner_obs = D2L(closest_edge, corner)
-                #     if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
-                #         running = False
+                obs = self.get_observation()
 
-                #     elif dist_corner_quay < 0.01:
-                #         self.bump()
-
-                #     elif not is_between(self.bounds[0], corner, self.bounds[1]):
-                #         running = False
-                #         out_of_bounds = True
-
-                #     else:
-                #         continue
-                #     break
+                print(f"Observation: \n \
+                delta_x:    {obs[0]} \n \
+                delta_y:    {obs[1]} \n \
+                delta_psi:  {obs[2]} \n \
+                u:          {obs[3]} \n \
+                v:          {obs[4]} \n \
+                r:          {obs[5]} \n \
+                d_q:        {obs[6]} \n \
+                psi_q:      {R2D(obs[7])} \n \
+                d_o:        {obs[8]} \n \
+                psi_o:      {R2D(obs[9])} \n")
 
                 if self.crashed():
                     running = False
-                else:
-                    running = True
-
-                # print(
-                #     f"Obstacle: \n    Distance: {np.round(dist, 2)} [m] \n   Angle: {np.round(R2D(angle), 2)} [degrees]")
 
                 # Step vehicle simulation
                 if not out_of_bounds:
@@ -292,6 +299,14 @@ class Simulator():
 
         # Render quay to screen
         self.screen.blit(self.quay.surf, self.quay.rect)
+
+        # if True:
+        #     for i in range(1000):
+        #         x, y = N2S(self.random_eta(),
+        #                    self.map.scale, self.map.origin)[0:2].tolist()
+
+        #         pygame.draw.circle(self.screen, (255, 26, 117),
+        #                            (x, y), 2)
 
         # Render vehicle to screen
         if self.vehicle != None:
@@ -375,11 +390,43 @@ class Simulator():
         return vertex[0] <= self.bounds[0][0] or vertex[1] <= self.bounds[0][1] or \
             vertex[0] >= self.bounds[1][0] or vertex[1] >= self.bounds[1][1]
 
-    def collide(self):
-        """
-        Not sure if this will be needed
-        """
-        pass
+    def random_eta(self):
+        padding = 2  # [m]
+        x_init = np.random.uniform(
+            self.map.bounds[0] + padding, self.map.bounds[2] - self.quay.length - padding)
+        y_init = np.random.uniform(
+            self.map.bounds[1] + padding, self.map.bounds[3] - padding)
+        psi_init = ssa(np.random.uniform(-np.pi, np.pi))
+
+        return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
+
+    def get_observation(self):
+        delta_eta = self.eta - self.eta_d
+        delta_eta_2D = np.concatenate(
+            (delta_eta[0:2], delta_eta[-1]), axis=None)
+        d_q, psi_q = self.direction_and_angle_to_quay()
+        d_o, psi_o = self.direction_and_angle_to_obs()
+
+        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, psi_q, d_o, psi_o),
+                              axis=None).astype(np.float32)
+
+    def direction_and_angle_to_obs(self):
+        angle = 0
+        dist = np.inf
+        for edge in self.edges:
+            bearing, range = D2L(edge, self.eta[0:2])
+            if range < dist:
+                angle = bearing - self.eta[-1]
+                dist = range
+                self.closest_edge = edge
+
+        return dist, angle
+
+    def direction_and_angle_to_quay(self):
+        bearing, dist = D2L(self.quay.colliding_edge, self.eta[0:2])
+        angle = bearing - self.eta[-1]
+
+        return dist, angle
 
     def close(self):
         pygame.display.quit()
@@ -391,9 +438,9 @@ def test_simulator():
     Procedure for testing simulator
     """
     # Initialize constants
-    fps = 50
+    fps = 20
     eta_init = np.array([0, 0, 0, 0, 0, 0], float)
-    eta_d = np.array([15-0.75-1, 0, 0, 0, 0, 0], float)
+    eta_d = np.array([25/2-0.75-1, 0, 0, 0, 0, 0], float)
 
     # Initialize vehicle
     vehicle = Otter(dt=1/fps)

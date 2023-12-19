@@ -1,6 +1,17 @@
 """
 This is the simplest python RL environment I could think of.
 With a large boundary around this is simply snake with one pixel
+
+
+Observations space
+------------------
+s = [delta_x, delta_y, delta_psi, u, v, r, d_q, psi_q, d_o, psi_o]
+
+
+Action space
+------------
+a = [n_1, n_2]
+
 """
 import gymnasium as gym
 import numpy as np
@@ -61,6 +72,8 @@ class SimpleEnv(gym.Env):
         self.closest_edge = ((0, 0), (0, 0))
         self.eta_d = self.target.eta_d
 
+        self.seed = seed
+
         # Add quay
         self.quay = self.map.quay
 
@@ -70,7 +83,6 @@ class SimpleEnv(gym.Env):
         # Initial conditions
         if seed is not None:
             # Make random initial condition and weather
-            self.seed = seed
             np.random.seed(seed)
             self.eta = self.random_eta()
 
@@ -89,10 +101,6 @@ class SimpleEnv(gym.Env):
         self.eta_min = np.array([N_min, E_min, vehicle.limits["psi_min"]])
         self.nu_max = vehicle.limits["nu_max"]
         self.nu_min = vehicle.limits["nu_min"]
-        # # List of maximum actuator output
-        # u_max = vehicle.limits["u_max"]
-        # # List of minimum actuator output
-        # u_min = vehicle.limits["u_min"]
 
         # Maximum distance and angle to quay
         d_q_max = np.linalg.norm(np.asarray(
@@ -249,14 +257,14 @@ class SimpleEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-        # self.isopen = False
-
     def get_observation(self):
-        planar_eta = np.concatenate((self.eta[0:2], self.eta[-1]), axis=None)
+        delta_eta = self.eta - self.eta_d
+        delta_eta_2D = np.concatenate(
+            (delta_eta[0:2], delta_eta[-1]), axis=None)
         d_q, psi_q = self.direction_and_angle_to_quay()
         d_o, psi_o = self.direction_and_angle_to_obs()
 
-        return np.concatenate((planar_eta, self.nu[0:3], d_q, psi_q, d_o, psi_o),
+        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, psi_q, d_o, psi_o),
                               axis=None).astype(np.float32)
 
     def crashed(self) -> bool:
@@ -353,7 +361,7 @@ class SimpleEnv(gym.Env):
         x_init = np.random.uniform(
             self.bounds[0] + padding, self.bounds[2] - self.quay.length - padding)
         y_init = np.random.uniform(
-            self.bounds[0] + padding, self.bounds[2] - padding)
+            self.bounds[1] + padding, self.bounds[3] - padding)
         psi_init = ssa(np.random.uniform(-np.pi, np.pi))
 
         return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
