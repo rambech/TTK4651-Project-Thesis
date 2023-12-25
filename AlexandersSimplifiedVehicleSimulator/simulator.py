@@ -154,7 +154,7 @@ class Simulator():
         self.edges = []
         self.corner = []
         self.closest_edge = ((0, 0), (0, 0))
-        self.see_edges = False  # Turn edges and vertices off or on
+        self.see_edges = True  # Turn edges and vertices off or on
         self.render()
 
     def simulate(self):
@@ -220,20 +220,20 @@ class Simulator():
                 tau_d = np.array([X, N])
 
                 # Distance and angle from CO to quay
-                bearing_q, dist_q = D2L(
-                    self.quay.colliding_edge, self.eta[0:2])
-                angle_q = bearing_q - self.eta[-1]
+                # bearing_q, dist_q = D2L(
+                #     self.quay.colliding_edge, self.eta[0:2])
+                # angle_q = bearing_q - self.eta[-1]
 
-                angle = 0
-                dist = np.inf
-                closest_edge = ((0, 0), (0, 0))
-                for edge in self.edges:
-                    bearing, range = D2L(edge, self.eta[0:2])
-                    if range < dist:
-                        # Angle between bow and obstacle
-                        angle = bearing - self.eta[-1]
-                        dist = range
-                        self.closest_edge = edge
+                # angle = 0
+                # dist = np.inf
+                # closest_edge = ((0, 0), (0, 0))
+                # for edge in self.edges:
+                #     bearing, range = D2L(edge, self.eta[0:2])
+                #     if range < dist:
+                #         # Angle between bow and obstacle
+                #         angle = bearing - self.eta[-1]
+                #         dist = range
+                #         self.closest_edge = edge
 
                 obs = self.get_observation()
 
@@ -360,10 +360,8 @@ class Simulator():
                 return True
             elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
                 return True
-            elif dist_corner_quay < 0.01:
+            elif dist_corner_quay < 0.05:
                 self.bump()
-            else:
-                continue
 
     def bump(self):
         """
