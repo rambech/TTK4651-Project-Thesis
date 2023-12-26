@@ -55,22 +55,23 @@ class ForwardDockingEnv(gym.Env):
         "render_fps": FPS,
     }
 
-    def __init__(self, vehicle: Otter, map: SimpleMap, target: Target, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  docked_threshold=[1, D2R(10)]) -> None:
+    def __init__(self, vehicle: Otter, map: SimpleMap, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  docked_threshold=[1, D2R(10)]) -> None:
         super(ForwardDockingEnv, self).__init__()
         """
         Initialises ForwardDockingEnv() object
         """
-
         self.vehicle = vehicle
         self.map = map
-        self.target = target
+        self.eta_d = np.array([25/2-0.75-1, 0, 0, 0, 0, 0], float)
+        self.target = Target(self.eta_d, vehicle.L,
+                             vehicle.B, map.scale, map.origin)
+        self.thres = docked_threshold
         self.fps = FPS
         self.metadata["render_fps"] = FPS
         self.dt = self.vehicle.dt
         self.bounds = self.map.bounds
         self.edges = self.map.colliding_edges
         self.closest_edge = ((0, 0), (0, 0))
-        self.eta_d = self.target.eta_d
 
         self.seed = seed
 
@@ -123,10 +124,6 @@ class ForwardDockingEnv(gym.Env):
         self.observation_space = spaces.Box(
             lower, upper, self.observation_size)
         self.action_space = vehicle.action_space
-
-        # Add target
-        self.target = target
-        self.thres = docked_threshold
 
         if self.render_mode == "human":
             # Initialize pygame

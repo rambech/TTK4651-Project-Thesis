@@ -1,1 +1,1 @@
-from .rewards import norm
+from .rewards import *

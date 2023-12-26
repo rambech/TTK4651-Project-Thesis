@@ -2,7 +2,7 @@ import os
 import time
 import json
 import numpy as np
-from rl.env import ForwardDockingEnv
+from rl.env import ForwardDockingEnv, DPEnv
 from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import D2R
@@ -13,7 +13,7 @@ from utils import D2R
 
 # Training settings
 model_type = "PPO"
-train_type = "DP"
+env_type = "DP"
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
@@ -22,22 +22,8 @@ EPISODES = 10000
 TIMESTEPS = SECONDS*RL_FPS*timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 
-
-# User input
-if train_type == "docking":
-    seed = 1
-    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
-    eta_d = np.array([25/2-0.75-1, 0, 0, 0, 0, 0], float)
-    threshold = [1, D2R(10)]
-
-elif train_type == "DP":
-    seed = None
-    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
-    eta_d = np.array([0, 0, 0, 0, 0, 0], float)
-    threshold = [5, D2R(30)]
-
-test_name = input(f"Test name is {model_type}-{train_type}-")
-test_name = f"{model_type}-{train_type}-{test_name}"
+test_name = input(f"Test name is {model_type}-{env_type}-")
+test_name = f"{model_type}-{env_type}-{test_name}"
 
 models_dir = "models"
 log_dir = "logs"
@@ -53,28 +39,43 @@ if not os.path.exists(log_path):
 file_name = f"{test_name}.json"
 file_path = os.path.join(model_path, file_name)
 
+
+# Initialize vehicle
+vehicle = Otter(dt=1/VEHICLE_FPS)
+
+map = SimpleMap()
+# target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
+
+# User input
+if env_type == "docking":
+    seed = 1
+    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+    threshold = [1, D2R(10)]
+    env = ForwardDockingEnv(vehicle, map, seed=seed,
+                            render_mode=None, FPS=RL_FPS)
+
+elif env_type == "DP":
+    seed = 1
+    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+    eta_d = np.array([0, 0, 0, 0, 0, 0], float)
+    threshold = [5, D2R(30)]
+    env = DPEnv(vehicle, map, seed, render_mode=None, FPS=RL_FPS)
+
 data = {
     "Test_name": test_name,
     "Model type": model_type,
+    "Env type": env_type,
     "Vehicle fps": VEHICLE_FPS,
     "RL fps": RL_FPS,
     "Episodes": EPISODES,
     "Timesteps": TIMESTEPS,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Target pose": eta_d.tolist()
 }
 
 # Save the dictionary to the file
 with open(file_path, 'w') as json_file:
     json.dump(data, json_file, indent=2)
-
-# Initialize vehicle
-vehicle = Otter(dt=1/VEHICLE_FPS)
-
-map = SimpleMap()
-target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
-env = ForwardDockingEnv(vehicle, map, target, seed=seed, render_mode=None, FPS=RL_FPS)
 
 env.reset(seed)
 if model_type == "PPO":

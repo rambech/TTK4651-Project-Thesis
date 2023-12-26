@@ -5,8 +5,8 @@ Main script for running Vehicle simulator
 from stable_baselines3 import PPO, TD3
 import os
 import numpy as np
-from rl.env import ForwardDockingEnv
-from maps import SimpleMap, Target
+from rl.env import ForwardDockingEnv, DPEnv
+from maps import SimpleMap
 from vehicle import Otter
 
 # TODO: Make it possible to add disturbances using keystrokes,
@@ -16,7 +16,7 @@ from vehicle import Otter
 # TODO: Save test data in a file for later plotting
 # TODO: Make plotting tools for later plotting
 
-RL = False
+RL = True
 
 if RL == True:
     """
@@ -25,14 +25,16 @@ if RL == True:
     dt = 0.02   # Time step size
 
     model_type = "PPO"
-    load_iteration = "100000"
+    env_type = "DP"
+    folder_name = "PPO-DP-1"
+    load_iteration = "10320000"
     timestep_multiplier = 5
     SECONDS = 120
     VEHICLE_FPS = 60
     RL_FPS = 20
     EPISODES = 10000
     TIMESTEPS = SECONDS*RL_FPS*timestep_multiplier
-    seed = 1
+    seed = 5
     eta_init = np.array([0, 0, 0, 0, 0, 0], float)
     eta_d = np.array([25-0.75-1, 0, 0, 0, 0, 0], float)
 
@@ -40,13 +42,15 @@ if RL == True:
     vehicle = Otter(dt=1/VEHICLE_FPS)
 
     map = SimpleMap()
-    target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
-    env = ForwardDockingEnv(vehicle, map, target, seed=seed,
-                    render_mode="human", FPS=RL_FPS)
+    if env_type == "docking":
+        env = ForwardDockingEnv(vehicle, map, seed=seed,
+                                render_mode=None, FPS=RL_FPS)
+
+    elif env_type == "DP":
+        env = DPEnv(vehicle, map, seed, render_mode="human", FPS=RL_FPS)
 
     models_dir = f"models"
-    model_path = f"{models_dir}/{model_type}/{load_iteration}.zip"
-
+    model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
     assert (
         os.path.exists(model_path)
     ), f"{model_path} does not exist"
@@ -60,13 +64,14 @@ if RL == True:
     episodes = 10
 
     for ep in range(episodes):
-        obs = env.reset()
+        obs, _ = env.reset()
         terminated = False
+        print(f"Obs: {obs}")
         while not terminated:
             env.render()
             action, _ = model.predict(obs)
             obs, reward, terminated, trunc, info = env.step(action)
-
+            print(f"Reward: {reward}")
     env.close()
 
 else:

@@ -5,7 +5,7 @@ With a large boundary around this is simply snake with one pixel
 
 Observations space
 ------------------
-s = [delta_x, delta_y, delta_psi, u, v, r, d_q, psi_q, d_o, psi_o]
+s = [x_error, y_error, psi_error, u, v, r]
 
 
 Action space
@@ -18,12 +18,11 @@ import numpy as np
 from gymnasium import spaces
 import pygame
 
-from .env import Env
-from vehicle import Vehicle, Otter
+from vehicle import Otter
 from maps import SimpleMap, Target
-from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa
+from utils import attitudeEuler, D2L, D2R, ssa
 
-from rl.rewards import norm
+from rl.rewards import gaussian, r_time
 
 # TODO: Use SSA
 # TODO: Make it possible to have the current change during an episode
@@ -70,9 +69,11 @@ class DPEnv(gym.Env):
         self.metadata["render_fps"] = FPS
         self.dt = self.vehicle.dt
         self.bounds = self.map.bounds
-        self.edges = self.map.colliding_edges
-        self.closest_edge = ((0, 0), (0, 0))
-        self.eta_d = self.target.eta_d
+
+        # Goal conditions
+        self.thres = docked_threshold   # [m, rad]
+        self.stay_time = 5              # [s]
+        self.stay_timer = None
 
         self.seed = seed
 
@@ -101,17 +102,6 @@ class DPEnv(gym.Env):
         self.nu_max = vehicle.limits["nu_max"]
         self.nu_min = vehicle.limits["nu_min"]
 
-        # Maximum distance and angle to quay
-        # d_q_max = np.linalg.norm(np.asarray(
-        #     self.bounds[2:]) - np.asarray(self.bounds[:2]), 2)
-        # psi_q_max = np.pi
-        # psi_q_min = -psi_q_max
-
-        # Maximum distance and angle to obstacle
-        # d_o_max = d_q_max
-        # psi_o_max = psi_q_max
-        # psi_o_min = psi_q_min
-
         upper = np.concatenate(
             (self.eta_max, self.nu_max), axis=None).astype(np.float32)
         lower = np.concatenate(
@@ -122,8 +112,6 @@ class DPEnv(gym.Env):
         self.observation_space = spaces.Box(
             lower, upper, self.observation_size)
         self.action_space = vehicle.action_space
-
-        self.thres = docked_threshold
 
         if self.render_mode == "human":
             # Initialize pygame
@@ -147,9 +135,8 @@ class DPEnv(gym.Env):
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
-        self.has_crashed = False
-        # self.has_docked = False
-        self.dock_timer = 0
+        # self.has_crashed = False
+        self.stay_timer = None
 
         observation = self.get_observation()
         info = {}
@@ -174,17 +161,31 @@ class DPEnv(gym.Env):
                 self.eta, self.nu, self.u, action, beta_c, V_c)
             self.eta = attitudeEuler(self.eta, self.nu, self.dt)
 
+        observation = self.get_observation()
+        reward = gaussian(observation) + r_time()
+
+        # Start counting when vessel is
+        # within the threshold
+        if self.stay_timer is None:
+            if self.in_area():
+                self.stay_timer = 0
+        else:
+            # If the vessel stays in the area
+            # continue to count
+            if self.in_area():
+                self.stay_timer += 1/self.fps
+            else:
+                self.stay_timer = None
+
         if self.crashed():
             terminated = True
-            self.has_crashed = True
-        # elif self.docked():
-        #     terminated = True
-        #     self.has_docked = True
+            # self.has_crashed = True
+            reward = -10000
+        if self.success():
+            terminated = True
+            reward = 10000
         else:
             terminated = False
-
-        reward = norm(self.eta, self.eta_d, self.has_crashed, self.has_docked)
-        observation = self.get_observation()
 
         if self.render_mode == "human":
             self.render()
@@ -255,51 +256,21 @@ class DPEnv(gym.Env):
             pygame.quit()
 
     def get_observation(self):
-        delta_eta = self.eta - self.eta_d
-        delta_eta_2D = np.concatenate(
-            (delta_eta[0:2], delta_eta[-1]), axis=None)
-        d_q, psi_q = self.direction_and_angle_to_quay()
-        d_o, psi_o = self.direction_and_angle_to_obs()
+        eta_error = self.eta - self.eta_d
+        pos_error = np.concatenate(
+            (eta_error[0:2], eta_error[-1]), axis=None)
+        vel_error = np.concatenate(
+            (self.nu[0:2], self.nu[-1]), axis=None)
 
-        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, psi_q, d_o, psi_o),
+        return np.concatenate((pos_error, vel_error),
                               axis=None).astype(np.float32)
 
     def crashed(self) -> bool:
         for corner in self.vehicle.corners(self.eta):
-            # _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
-            # _, dist_corner_obs = D2L(self.closest_edge, corner)
-            # if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
-            #     return True
             if abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
                 return True
-            # elif dist_corner_quay < 0.01:
-            #     self.bump()
 
         return False
-
-    # def docked(self) -> bool:
-    #     if (np.linalg.norm(self.eta_d[0:1] - self.eta[0:1]) <= self.thres[0] and abs(self.eta_d[-1] - self.eta[-1]) <= self.thres[1]):
-    #         return True
-    #     else:
-    #         return False
-
-    # def direction_and_angle_to_obs(self):
-    #     angle = 0
-    #     dist = np.inf
-    #     for edge in self.edges:
-    #         bearing, range = D2L(edge, self.eta[0:2])
-    #         if range < dist:
-    #             angle = bearing - self.eta[-1]
-    #             dist = range
-    #             self.closest_edge = edge
-
-    #     return dist, angle
-
-    def direction_and_angle_to_quay(self):
-        bearing, dist = D2L(self.quay.colliding_edge, self.eta[0:2])
-        angle = bearing - self.eta[-1]
-
-        return dist, angle
 
     def current_force(self) -> tuple[float, float]:
         """
@@ -331,11 +302,40 @@ class DPEnv(gym.Env):
         return 0.0, 0.0
 
     def random_eta(self):
+        """
+        Spawn vehicle based on uniform distribution. 
+        2 meter buffer at the edges 
+
+        Parameters
+        ----------
+        self
+
+        Returns
+        -------
+        eta_init : np.ndarray
+            Random initial position
+
+        """
         padding = 2  # [m]
         x_init = np.random.uniform(
-            self.bounds[0] + padding, self.bounds[2] - self.quay.length - padding)
+            self.bounds[0] + padding, self.bounds[2] - padding)
         y_init = np.random.uniform(
             self.bounds[1] + padding, self.bounds[3] - padding)
         psi_init = ssa(np.random.uniform(-np.pi, np.pi))
 
         return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
+
+    def in_area(self):
+        dist = np.linalg.norm(self.eta[0:2] - self.eta_d[0:2], 2)
+        ang = abs(self.eta[-1] - self.eta_d[-1])
+        if dist <= self.thres[0] and ang <= self.thres[1]:
+            return True
+
+        return False
+
+    def success(self):
+        if self.stay_timer is not None:
+            if int(self.stay_timer) >= self.stay_time:
+                return True
+
+        return False
