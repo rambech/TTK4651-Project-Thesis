@@ -5,7 +5,7 @@ Main script for running Vehicle simulator
 from stable_baselines3 import PPO, TD3
 import os
 import numpy as np
-from rl.env import SimpleEnv
+from rl.env import ForwardDockingEnv
 from maps import SimpleMap, Target
 from vehicle import Otter
 
@@ -41,7 +41,7 @@ if RL == True:
 
     map = SimpleMap()
     target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
-    env = SimpleEnv(vehicle, map, target, seed=seed,
+    env = ForwardDockingEnv(vehicle, map, target, seed=seed,
                     render_mode="human", FPS=RL_FPS)
 
     models_dir = f"models"

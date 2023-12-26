@@ -2,7 +2,7 @@ import os
 import time
 import json
 import numpy as np
-from rl.env import SimpleEnv
+from rl.env import ForwardDockingEnv
 from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import D2R
@@ -74,7 +74,7 @@ vehicle = Otter(dt=1/VEHICLE_FPS)
 
 map = SimpleMap()
 target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
-env = SimpleEnv(vehicle, map, target, seed=seed, render_mode=None, FPS=RL_FPS)
+env = ForwardDockingEnv(vehicle, map, target, seed=seed, render_mode=None, FPS=RL_FPS)
 
 env.reset(seed)
 if model_type == "PPO":

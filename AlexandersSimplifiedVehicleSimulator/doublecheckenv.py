@@ -1,4 +1,4 @@
-from rl.env import SimpleEnv
+from rl.env import ForwardDockingEnv
 from vehicle import Otter
 import numpy as np
 from maps import SimpleMap, Target
@@ -16,7 +16,7 @@ map = SimpleMap()
 x_d = map.QUAY_POS[0] - map.QUAY_SIZE[0]/2 - vehicle.L/2
 eta_d = np.array([x_d, 0, 0, 0, 0, 0], float)
 target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
-env = SimpleEnv(vehicle, map, target, render_mode="human", FPS=rl_fps)
+env = ForwardDockingEnv(vehicle, map, target, render_mode="human", FPS=rl_fps)
 
 episodes = 50
 

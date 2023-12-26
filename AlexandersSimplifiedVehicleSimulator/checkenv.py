@@ -1,5 +1,5 @@
 from stable_baselines3.common.env_checker import check_env
-from rl.env import SimpleEnv
+from rl.env import ForwardDockingEnv
 from maps import SimpleMap, Target
 from vehicle import Otter
 import numpy as np
@@ -14,7 +14,7 @@ vehicle = Otter(dt=1/fps)
 
 map = SimpleMap()
 target = Target(eta_d, vehicle.L, vehicle.B, vehicle.scale, map.origin)
-env = SimpleEnv(vehicle, map, target)
+env = ForwardDockingEnv(vehicle, map, target)
 
 # It will check your custom environment and output additional warnings if needed
 check_env(env)
