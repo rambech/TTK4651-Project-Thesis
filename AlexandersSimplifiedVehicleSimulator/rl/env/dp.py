@@ -20,18 +20,11 @@ import pygame
 
 from vehicle import Otter
 from maps import SimpleMap, Target
-from utils import attitudeEuler, D2L, D2R, ssa
+from utils import attitudeEuler, D2L, D2R, ssa, R2D
 
-from rl.rewards import gaussian, r_time
+from rl.rewards import r_gaussian, r_time, r_surge
 
-# TODO: Use SSA
-# TODO: Make it possible to have the current change during an episode
-# TODO: Make a docking threshold of some sort
-# TODO: Implement closest obstacle measure for the observation space
-# TODO: Implement distance and angle to closest point on the quay for the observation space
-# TODO: Visualise actuator usage
-# TODO: Optional: make observations into a dict
-# TODO: Add info dict
+# TODO: Make sure it crashes when it's supposed to
 
 # Environment parameters
 FPS = 50                          # [fps] Frames per second
@@ -42,10 +35,6 @@ FPS = 50                          # [fps] Frames per second
 # NED ones, RL and everything else is calculated
 # in NED, only rendering happens in the other coordinates.
 
-# Weather
-# SIDESLIP = 30           # [deg]
-# CURRENT_MAGNITUDE = 3   # [0]
-
 
 class DPEnv(gym.Env):
 
@@ -54,10 +43,10 @@ class DPEnv(gym.Env):
         "render_fps": FPS,
     }
 
-    def __init__(self, vehicle: Otter, map: SimpleMap, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  docked_threshold=[1, D2R(10)]) -> None:
+    def __init__(self, vehicle: Otter, map: SimpleMap, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  threshold=[1, D2R(10)], random_weather=False) -> None:
         super(DPEnv, self).__init__()
         """
-        Initialises ForwardDockingEnv() object
+        Initialises DPEnv() object
         """
 
         self.vehicle = vehicle
@@ -65,20 +54,11 @@ class DPEnv(gym.Env):
         self.eta_d = np.zeros(6, float)
         self.target = Target(self.eta_d, vehicle.L,
                              vehicle.B, map.scale, map.origin)
-        self.fps = FPS
-        self.metadata["render_fps"] = FPS
         self.dt = self.vehicle.dt
         self.bounds = self.map.bounds
-
-        # Goal conditions
-        self.thres = docked_threshold   # [m, rad]
-        self.stay_time = 5              # [s]
-        self.stay_timer = None
+        self.fps = FPS
 
         self.seed = seed
-
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.render_mode = render_mode
 
         # Initial conditions
         if seed is not None:
@@ -92,10 +72,14 @@ class DPEnv(gym.Env):
             self.eta = eta_init              # Initialize pose
             self.nu = np.zeros(6, float)     # Init velocity
             self.u = np.zeros(2, float)      # Init control vector
-            self.V_c = self.map.CURRENT_MAGNITUDE
-            self.beta_c = self.map.SIDESLIP
 
-        # Action space is given through super init
+        # Weather
+        self.random_weather = random_weather
+        self.beta_c, self.V_c = self.current_force()
+
+        # -----------------
+        # Observation space
+        # -----------------
         N_min, E_min, N_max, E_max = self.bounds
         self.eta_max = np.array([N_max, E_max, vehicle.limits["psi_max"]])
         self.eta_min = np.array([N_min, E_min, vehicle.limits["psi_min"]])
@@ -112,6 +96,28 @@ class DPEnv(gym.Env):
         self.observation_space = spaces.Box(
             lower, upper, self.observation_size)
         self.action_space = vehicle.action_space
+
+        # --------------
+        # End conditions
+        # --------------
+        # Fail
+        seconds_limit = 60
+        self.step_limit = seconds_limit*FPS  # [step]
+        self.step_count = 0
+
+        # Success
+        s_seconds = 3
+        self.thres = threshold          # [m, rad]
+        self.stay_time = FPS*s_seconds  # [step]
+        self.stay_timer = None
+
+        # ---------
+        # Rendering
+        # ---------
+        self.metadata["render_fps"] = FPS
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
 
         if self.render_mode == "human":
             # Initialize pygame
@@ -131,12 +137,15 @@ class DPEnv(gym.Env):
         else:
             self.eta = self.eta_init.copy()
 
+        self.beta_c, self.V_c = self.current_force()
+
         # self.eta = self.eta_init.copy()
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
         # self.has_crashed = False
         self.stay_timer = None
+        self.step_count = 0
 
         observation = self.get_observation()
         info = {}
@@ -147,7 +156,8 @@ class DPEnv(gym.Env):
         return observation, info
 
     def step(self, action):
-        beta_c, V_c = self.current_force()
+        terminated = False
+        self.step_count += 1
 
         # Simulate vehicle at a higher rate than the RL step
         step_rate = 1/(self.dt*self.fps)
@@ -158,11 +168,11 @@ class DPEnv(gym.Env):
 
         for _ in range(int(step_rate)):
             self.nu, self.u = self.vehicle.rl_step(
-                self.eta, self.nu, self.u, action, beta_c, V_c)
+                self.eta, self.nu, self.u, action, self.beta_c, self.V_c)
             self.eta = attitudeEuler(self.eta, self.nu, self.dt)
 
         observation = self.get_observation()
-        reward = gaussian(observation) + r_time()
+        reward = r_gaussian(observation) + r_time() + r_surge(observation)
 
         # Start counting when vessel is
         # within the threshold
@@ -173,19 +183,17 @@ class DPEnv(gym.Env):
             # If the vessel stays in the area
             # continue to count
             if self.in_area():
-                self.stay_timer += 1/self.fps
+                self.stay_timer += 1
             else:
                 self.stay_timer = None
 
-        if self.crashed():
-            terminated = True
-            # self.has_crashed = True
-            reward = -10000
         if self.success():
             terminated = True
-            reward = 10000
-        else:
-            terminated = False
+            reward = 10
+
+        if self.crashed() or self.step_count >= self.step_limit:
+            terminated = True
+            reward = -10
 
         if self.render_mode == "human":
             self.render()
@@ -212,15 +220,8 @@ class DPEnv(gym.Env):
 
         self.screen.fill(self.map.OCEAN_BLUE)
 
-        # Render obstacles
-        # for obstacle in self.map.obstacles:
-        #     self.screen.blit(obstacle.surf, obstacle.rect)
-
         # Render target pose to screen
         self.screen.blit(self.target.image, self.target.rect)
-
-        # Render quay to screen
-        # self.screen.blit(self.quay.surf, self.quay.rect)
 
         # Render vehicle to screen
         vessel_image, self.vessel_rect = self.vehicle.render(
@@ -246,6 +247,13 @@ class DPEnv(gym.Env):
         rpm = font.render(f"THR: ({n1}, {n2} [%])", 1, (0, 0, 0))
         self.screen.blit(rpm, (10, self.map.BOX_LENGTH-44))
 
+        # Weather
+        beta_c = np.round(self.beta_c, 2)
+        V_c = np.round(self.V_c, 2)
+        current = font.render(
+            f"WTR: ({V_c}, {R2D(beta_c)} [m/s, degrees])", 1, (0, 0, 0))
+        self.screen.blit(current, (10, self.map.BOX_LENGTH-56))
+
         pygame.event.pump()
         pygame.display.flip()
         self.clock.tick(self.fps)
@@ -258,7 +266,7 @@ class DPEnv(gym.Env):
     def get_observation(self):
         eta_error = self.eta - self.eta_d
         pos_error = np.concatenate(
-            (eta_error[0:2], eta_error[-1]), axis=None)
+            (eta_error[0:2], ssa(eta_error[-1])), axis=None)
         vel_error = np.concatenate(
             (self.nu[0:2], self.nu[-1]), axis=None)
 
@@ -299,7 +307,14 @@ class DPEnv(gym.Env):
             beta_c, V_c : tuple[float, float]
                 Angle and magnitude of current
         """
-        return 0.0, 0.0
+        if self.random_weather:
+            beta_c = np.random.uniform(0, 1.03)
+            V_c = ssa(np.random.uniform(0, 2*np.pi))
+        else:
+            beta_c = 0.0
+            V_c = 0.0
+
+        return beta_c, V_c
 
     def random_eta(self):
         """

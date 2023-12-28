@@ -14,12 +14,15 @@ from utils import D2R
 # Training settings
 model_type = "PPO"
 env_type = "DP"
+random_weather = True
+seed = None
+threshold = [1, D2R(10)]
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
 EPISODES = 10000
-TIMESTEPS = SECONDS*RL_FPS*timestep_multiplier
+TIMESTEPS = 10000  # SECONDS*RL_FPS*timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 
 test_name = input(f"Test name is {model_type}-{env_type}-")
@@ -48,27 +51,25 @@ map = SimpleMap()
 
 # User input
 if env_type == "docking":
-    seed = 1
     eta_init = np.array([0, 0, 0, 0, 0, 0], float)
-    threshold = [1, D2R(10)]
     env = ForwardDockingEnv(vehicle, map, seed=seed,
                             render_mode=None, FPS=RL_FPS)
 
 elif env_type == "DP":
-    seed = 1
     eta_init = np.array([0, 0, 0, 0, 0, 0], float)
-    eta_d = np.array([0, 0, 0, 0, 0, 0], float)
-    threshold = [5, D2R(30)]
-    env = DPEnv(vehicle, map, seed, render_mode=None, FPS=RL_FPS)
+    env = DPEnv(vehicle, map, seed, render_mode=None,
+                FPS=RL_FPS, threshold=threshold, random_weather=random_weather)
 
 data = {
     "Test_name": test_name,
     "Model type": model_type,
     "Env type": env_type,
+    "Random Weather": random_weather,
     "Vehicle fps": VEHICLE_FPS,
     "RL fps": RL_FPS,
     "Episodes": EPISODES,
     "Timesteps": TIMESTEPS,
+    "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
 }
@@ -94,12 +95,13 @@ for episode in range(1, EPISODES):
     if episode % 10 == 0:
         model.save(f"{model_path}/{TIMESTEPS*episode}")
 
-    # for episode in range(1, EPISODES):
-    #     env.reset()
-    #     terminated = False
-    #     while not terminated:
-    #         obs, reward, terminated, trunc, info = env.step(
-    #             env.action_space.sample())
+env.close()
+# for episode in range(1, EPISODES):
+#     env.reset()
+#     terminated = False
+#     while not terminated:
+#         obs, reward, terminated, trunc, info = env.step(
+#             env.action_space.sample())
 
-    #     if episode % 10 == 0:
-    #         model.save(f"{models_dir}/{TIMESTEPS*episode}")
+#     if episode % 10 == 0:
+#         model.save(f"{models_dir}/{TIMESTEPS*episode}")
