@@ -14,14 +14,14 @@ from utils import D2R
 # Training settings
 model_type = "PPO"
 env_type = "DP"
-random_weather = True
-seed = None
-threshold = [1, D2R(10)]
+random_weather = False
+seed = 2
+threshold = [1, D2R(60)]
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
-EPISODES = 10000
+EPISODES = 5000
 TIMESTEPS = 10000  # SECONDS*RL_FPS*timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 
@@ -89,7 +89,7 @@ if model_type == "TD3":
 
     model = TD3("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
 
-for episode in range(1, EPISODES):
+for episode in range(1, EPISODES+1):
     model.learn(total_timesteps=TIMESTEPS,
                 reset_num_timesteps=False, tb_log_name=model_type)
     if episode % 10 == 0:
