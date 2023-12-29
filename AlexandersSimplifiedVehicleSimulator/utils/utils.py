@@ -392,7 +392,7 @@ def D2R(deg: float) -> float:
         rad: Smallest signed angle in rad
     """
 
-    return ssa(deg*np.pi/180)
+    return deg*np.pi/180
 
 # ------------------------------------------------------------------------------
 

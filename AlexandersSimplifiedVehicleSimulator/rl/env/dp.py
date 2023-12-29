@@ -106,7 +106,7 @@ class DPEnv(gym.Env):
         self.step_count = 0
 
         # Success
-        s_seconds = 3
+        s_seconds = 5
         self.thres = threshold          # [m, rad]
         self.stay_time = FPS*s_seconds  # [step]
         self.stay_timer = None
@@ -172,28 +172,42 @@ class DPEnv(gym.Env):
             self.eta = attitudeEuler(self.eta, self.nu, self.dt)
 
         observation = self.get_observation()
-        reward = r_gaussian(observation) + r_time() + r_surge(observation)
+        reward = r_gaussian(observation)  # + r_surge(observation) + r_time()
 
         # Start counting when vessel is
         # within the threshold
-        if self.stay_timer is None:
-            if self.in_area():
+        # if self.stay_timer is None:
+        #     if self.in_area():
+        #         self.stay_timer = 0
+        # else:
+        #     # If the vessel stays in the area
+        #     # continue to count
+        #     if self.in_area():
+        #         self.stay_timer += 1
+        #     else:
+        #         self.stay_timer = None
+        if self.in_area():
+            if self.stay_timer is None:
                 self.stay_timer = 0
-        else:
-            # If the vessel stays in the area
-            # continue to count
-            if self.in_area():
-                self.stay_timer += 1
             else:
-                self.stay_timer = None
+                self.stay_timer += 1
+
+            # Cancel time reward when in area
+            # reward -= r_time()
+        else:
+            self.stay_timer = None
+
+        if self.step_count >= self.step_limit:
+            terminated = True
+            reward = -10
 
         if self.success():
             terminated = True
-            reward = 10
+            reward = 1000
 
-        if self.crashed() or self.step_count >= self.step_limit:
+        if self.crashed():
             terminated = True
-            reward = -10
+            reward = -1000
 
         if self.render_mode == "human":
             self.render()
@@ -308,8 +322,8 @@ class DPEnv(gym.Env):
                 Angle and magnitude of current
         """
         if self.random_weather:
-            beta_c = np.random.uniform(0, 1.03)
-            V_c = ssa(np.random.uniform(0, 2*np.pi))
+            beta_c = ssa(np.random.uniform(0, 2*np.pi))
+            V_c = np.random.uniform(0, 1.03)
         else:
             beta_c = 0.0
             V_c = 0.0
@@ -343,7 +357,7 @@ class DPEnv(gym.Env):
     def in_area(self):
         dist = np.linalg.norm(self.eta[0:2] - self.eta_d[0:2], 2)
         ang = abs(self.eta[-1] - self.eta_d[-1])
-        if dist <= self.thres[0] and ang <= self.thres[1]:
+        if dist <= self.thres[0] and ang <= self.thres[1]/2:
             return True
 
         return False

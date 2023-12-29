@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.linalg import inv, det
 
 
 def norm(eta, eta_d, has_crashed, has_docked):
@@ -40,18 +41,27 @@ def r_psi_e(psi_e, pos_e):
         return 0
 
 
-def r_pos_e(pos_e):
-    """
-    r = Ce^{-1/(2*sigma^2) pos_e^2}
+# def r_pos_e(pos_e):
+#     """
+#     r = Ce^{-1/(2*sigma^2) pos_e^2}
 
-    """
-    # if np.linalg.norm(pos_e) <= 10:
-    sigma = 5   # [m]
-    C = 1       # Max. along axis reward
+#     """
+#     # TODO: Determine if this should be replaces by multivariate gaussian
+#     # if np.linalg.norm(pos_e) <= 10:
+#     sigma = 2   # [m]
+#     C = 2       # Max. along axis reward
 
-    r1 = C*np.exp(-1/(2*sigma**2) * pos_e[0]**2)
-    r2 = C*np.exp(-1/(2*sigma**2) * pos_e[1]**2)
-    return r1 + r2
+#     r1 = C*np.exp(-1/(2*sigma**2) * pos_e[0]**2)
+#     r2 = C*np.exp(-1/(2*sigma**2) * pos_e[1]**2)
+#     return r1 + r2 - 1
+
+
+def r_pos_e(pos_e: np.ndarray) -> np.ndarray:
+    sigma = 4
+    var = sigma**2
+    C = 3
+    r = C*np.exp(-(pos_e[0]**2/var + pos_e[1]**2/var)/2) - 1
+    return r
 
 
 def r_surge(obs):
