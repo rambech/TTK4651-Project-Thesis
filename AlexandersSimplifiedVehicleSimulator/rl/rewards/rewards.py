@@ -83,14 +83,18 @@ def r_surge(obs):
     """
     Possibility to use surge rewards for docking
     """
+    # If within 5 meters of desired position,
+    # allow for smaller velocities
     if np.linalg.norm(obs[0:2], 2) <= 5:
-        return 0
+        if obs[3] < 2.58:
+            return 0.1
+
     else:
-        # If u < 0, give negative reward
-        if obs[3] < 0:
-            return -0.5
-        else:
-            return 0
+        # If 1 < u < 5 knots, give positive reward
+        if 0.515 < obs[3] < 2.58:
+            return 0.1
+
+    return 0
 
 
 def r_time():

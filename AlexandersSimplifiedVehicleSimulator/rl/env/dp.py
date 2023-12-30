@@ -172,30 +172,16 @@ class DPEnv(gym.Env):
             self.eta = attitudeEuler(self.eta, self.nu, self.dt)
 
         observation = self.get_observation()
-        reward = r_gaussian(observation)  # + r_surge(observation) + r_time()
 
-        # Start counting when vessel is
-        # within the threshold
-        # if self.stay_timer is None:
-        #     if self.in_area():
-        #         self.stay_timer = 0
-        # else:
-        #     # If the vessel stays in the area
-        #     # continue to count
-        #     if self.in_area():
-        #         self.stay_timer += 1
-        #     else:
-        #         self.stay_timer = None
         if self.in_area():
             if self.stay_timer is None:
                 self.stay_timer = 0
             else:
                 self.stay_timer += 1
-
-            # Cancel time reward when in area
-            # reward -= r_time()
         else:
             self.stay_timer = None
+
+        reward = r_gaussian(observation) + r_surge(observation)
 
         if self.step_count >= self.step_limit:
             terminated = True
