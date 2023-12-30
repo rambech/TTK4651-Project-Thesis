@@ -1,3 +1,4 @@
+import tikzplotlib
 import matplotlib.pyplot as plt
 from rl.rewards import r_pos_e, r_psi_e
 import numpy as np
@@ -7,14 +8,16 @@ from mpl_toolkits.mplot3d import axes3d
 
 ax = plt.figure().add_subplot(projection='3d')
 # ax1 = plt.figure().add_subplot(projection='3d')
-x = y = np.arange(-15, 15, 0.05)
+x = y = np.arange(-15, 15, 0.1)
 X, Y = np.meshgrid(x, y)
-Zer = np.zeros((500, 2), float)
-# Z1 = np.zeros((len(X[0]), len(X[1]), 2), float)
-Z = r_pos_e((X, Y))
 
-# Plot the 3D surface
-ax.plot_surface(X, Y, Z, edgecolor='royalblue', linewidth=0.5, rstride=8, cstride=8,
+Z = r_pos_e((X, Y))
+zeros = np.zeros((Z.shape))
+
+# Plot the 3D surface 'royalblue'
+ax.plot_surface(X, Y, Z, edgecolor="seagreen", linewidth=0.5, rstride=8, cstride=8,
+                alpha=0.3)
+ax.plot_surface(X, Y, zeros, edgecolor='lightgray', linewidth=0.5, rstride=8, cstride=8,
                 alpha=0.3)
 
 # Plot projections of the contours for each dimension.  By choosing offsets
@@ -41,5 +44,7 @@ ax.set(xlim=(-16, 16), ylim=(-16, 16), zlim=(-1, 2),
 
 # ax1.set(xlim=(-20, 20), ylim=(-20, 20), zlim=(-3, 3),
 #         xlabel='X', ylabel='Y', zlabel='Z')
+
+tikzplotlib.save("test.tex", axis_height="4", axis_width="6")
 
 plt.show()

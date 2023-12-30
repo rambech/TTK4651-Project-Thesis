@@ -19,18 +19,18 @@ from utils import D2R
 # TODO: Make plotting tools for later plotting
 
 # To test RL or not to test RL that is the question
-RL = False
+RL = True
 
 env_type = "DP"
 random_weather = False
+seed = 1
 timestep_multiplier = 5
-threshold = [1, D2R(60)]
+threshold = [1, D2R(90)]
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
 # EPISODES = 10000
 # TIMESTEPS = SECONDS*RL_FPS  # *timestep_multiplier
-seed = None
 eta_init = np.array([0, 0, 0, 0, 0, 0], float)
 eta_d = np.array([25-0.75-1, 0, 0, 0, 0, 0], float)
 
@@ -43,16 +43,16 @@ if env_type == "docking":
                             render_mode=None, FPS=RL_FPS)
 
 elif env_type == "DP":
-    env = DPEnv(vehicle, map, seed, render_mode="human",
-                FPS=RL_FPS, random_weather=random_weather)
+    env = DPEnv(vehicle, map, seed, eta_init=eta_init, render_mode="human",
+                FPS=RL_FPS, threshold=threshold, random_weather=random_weather)
 
 if RL == True:
     """
     RL parameters
     """
     model_type = "PPO"
-    folder_name = "PPO-DP-19"
-    load_iteration = "40800000"
+    folder_name = "PPO-DP-39"
+    load_iteration = "9600000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
