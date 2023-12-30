@@ -57,11 +57,26 @@ def r_psi_e(psi_e, pos_e):
 
 
 def r_pos_e(pos_e: np.ndarray) -> np.ndarray:
-    sigma = 4
+    """
+    Bivariate Gaussian reward function
+
+    r = -1 + C * e^{-1/2 (x^2/var + y^2/var))
+
+    Parameters
+    ----------
+    pos_e : iterable[x: arraylike, y: arraylike]
+        Cartesian position error (x, y)
+
+    Returns
+    -------
+    reward : float
+        Gaussian reward
+    """
+    sigma = 3
     var = sigma**2
     C = 3
-    r = C*np.exp(-(pos_e[0]**2/var + pos_e[1]**2/var)/2) - 1
-    return r
+    reward = C*np.exp(-(pos_e[0]**2/var + pos_e[1]**2/var)/2) - 1
+    return reward
 
 
 def r_surge(obs):
@@ -73,7 +88,7 @@ def r_surge(obs):
     else:
         # If u < 0, give negative reward
         if obs[3] < 0:
-            return -1
+            return -0.5
         else:
             return 0
 
