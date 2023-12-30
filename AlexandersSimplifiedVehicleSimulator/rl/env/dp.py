@@ -22,7 +22,7 @@ from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, ssa, R2D
 
-from rl.rewards import r_gaussian, r_time, r_surge
+from rl.rewards import r_gaussian, r_time, r_surge, r_euclidean
 
 # TODO: Make sure it crashes when it's supposed to
 
@@ -173,19 +173,23 @@ class DPEnv(gym.Env):
 
         observation = self.get_observation()
 
+        # r_gaussian(observation)
+        reward = r_surge(observation) + r_euclidean(observation)
+
         if self.in_area():
             if self.stay_timer is None:
                 self.stay_timer = 0
             else:
                 self.stay_timer += 1
+
+            # Give reward if inside area
+            reward += 1
         else:
             self.stay_timer = None
 
-        reward = r_gaussian(observation) + r_surge(observation)
-
         if self.step_count >= self.step_limit:
             terminated = True
-            reward = -10
+            reward = -100
 
         if self.success():
             terminated = True

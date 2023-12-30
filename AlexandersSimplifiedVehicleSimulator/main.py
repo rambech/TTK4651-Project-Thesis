@@ -19,13 +19,13 @@ from utils import D2R
 # TODO: Make plotting tools for later plotting
 
 # To test RL or not to test RL that is the question
-RL = True
+RL = False
 
 env_type = "DP"
 random_weather = False
 seed = 1
 timestep_multiplier = 5
-threshold = [1, D2R(90)]
+threshold = [3, D2R(90)]
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
@@ -51,8 +51,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = "PPO-DP-39"
-    load_iteration = "9600000"
+    folder_name = "PPO-DP-40"
+    load_iteration = "9900000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"

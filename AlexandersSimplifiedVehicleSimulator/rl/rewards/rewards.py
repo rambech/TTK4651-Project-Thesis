@@ -109,3 +109,11 @@ def r_gaussian(obs):
     pos_e = np.array([obs[0], obs[1]])
 
     return r_pos_e(pos_e) + r_psi_e(obs[2], pos_e)
+
+
+def r_euclidean(obs):
+    """
+    r = - 100 * norm((x, y), 2)
+    """
+
+    return - np.linalg.norm(obs[0:2], 2) - 0.5 * abs(obs[2])
