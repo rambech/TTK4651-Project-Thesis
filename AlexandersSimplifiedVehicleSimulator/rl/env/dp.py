@@ -101,7 +101,7 @@ class DPEnv(gym.Env):
         # End conditions
         # --------------
         # Fail
-        seconds_limit = 60
+        seconds_limit = 120
         self.step_limit = seconds_limit*FPS  # [step]
         self.step_count = 0
 
@@ -110,6 +110,8 @@ class DPEnv(gym.Env):
         self.thres = threshold          # [m, rad]
         self.stay_time = FPS*s_seconds  # [step]
         self.stay_timer = None
+
+        self.prev_shape = None
 
         # ---------
         # Rendering
@@ -139,13 +141,14 @@ class DPEnv(gym.Env):
 
         self.beta_c, self.V_c = self.current_force()
 
-        # self.eta = self.eta_init.copy()
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
         # self.has_crashed = False
         self.stay_timer = None
         self.step_count = 0
+
+        self.prev_shape = None
 
         observation = self.get_observation()
         info = {}
@@ -173,8 +176,18 @@ class DPEnv(gym.Env):
 
         observation = self.get_observation()
 
-        # r_gaussian(observation)
-        reward = r_surge(observation) + r_euclidean(observation)
+        # r_gaussian(observation) r_surge(observation)
+        shape = r_euclidean(observation) + r_surge(observation)
+
+        reward = shape
+
+        if np.linalg.norm(observation[0:2]) < 3:
+            reward += 1
+
+        if self.prev_shape:
+            reward -= self.prev_shape
+
+        self.prev_shape = shape
 
         if self.in_area():
             if self.stay_timer is None:
@@ -340,7 +353,9 @@ class DPEnv(gym.Env):
             self.bounds[0] + padding, self.bounds[2] - padding)
         y_init = np.random.uniform(
             self.bounds[1] + padding, self.bounds[3] - padding)
-        psi_init = ssa(np.random.uniform(-np.pi, np.pi))
+        ang2d = np.arctan2(
+            y_init - self.eta_d[1], x_init - self.eta_d[0],) - np.pi
+        psi_init = np.random.uniform(ang2d-np.pi/2, ang2d+np.pi/2)
 
         return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
 

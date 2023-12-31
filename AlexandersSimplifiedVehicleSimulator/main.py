@@ -51,8 +51,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = "PPO-DP-40"
-    load_iteration = "9900000"
+    folder_name = "PPO-DP-44"
+    load_iteration = "28800000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"

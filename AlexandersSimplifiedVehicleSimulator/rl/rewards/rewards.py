@@ -32,7 +32,7 @@ def r_psi_e(psi_e, pos_e):
         Gaussian heading reward
     """
 
-    if np.linalg.norm(pos_e, 2) <= 3:
+    if np.linalg.norm(pos_e, 2) <= 5:
         sigma = np.pi/4  # [rad]
         C = 1            # Max. along axis reward
 
@@ -85,16 +85,17 @@ def r_surge(obs):
     """
     # If within 5 meters of desired position,
     # allow for smaller velocities
-    if np.linalg.norm(obs[0:2], 2) <= 5:
-        if obs[3] < 2.58:
-            return 0.1
+    # if np.linalg.norm(obs[0:2], 2) <= 5:
+    #     if -2.58 < obs[3] < 2.58:
+    #         return 0.1
 
-    else:
-        # If 1 < u < 5 knots, give positive reward
-        if 0.515 < obs[3] < 2.58:
-            return 0.1
+    # else:
+    #     # If 0.5 < u < 5 knots, give positive reward
+    #     if 0.257 < obs[3] < 2.58:
+    #         return 0.1
 
-    return 0
+    # return 0
+    return - np.linalg.norm(obs[3:6], 3)
 
 
 def r_time():
@@ -116,4 +117,4 @@ def r_euclidean(obs):
     r = - 100 * norm((x, y), 2)
     """
 
-    return - np.linalg.norm(obs[0:2], 2) - 0.5 * abs(obs[2])
+    return - 10 * np.linalg.norm(obs[0:2], 2) - abs(obs[2])

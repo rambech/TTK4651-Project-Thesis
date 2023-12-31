@@ -15,8 +15,8 @@ from utils import D2R
 model_type = "PPO"
 env_type = "DP"
 random_weather = False
-seed = 1
-threshold = [3, D2R(90)]
+seed = 4
+threshold = [1, D2R(90)]
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60

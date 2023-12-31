@@ -13,13 +13,13 @@ Action space
 a = [n_1, n_2]
 
 """
-import gymnasium as gym
+
 import numpy as np
 from gymnasium import spaces
 import pygame
 
 from .env import Env
-from vehicle import Vehicle, Otter
+from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa
 
@@ -48,7 +48,7 @@ FPS = 50                          # [fps] Frames per second
 # CURRENT_MAGNITUDE = 3   # [0]
 
 
-class ForwardDockingEnv(gym.Env):
+class ForwardDockingEnv(Env):
 
     metadata = {
         "render_modes": ["human"],
@@ -123,41 +123,11 @@ class ForwardDockingEnv(gym.Env):
 
         self.observation_space = spaces.Box(
             lower, upper, self.observation_size)
+
+        # ------------
+        # Action space
+        # ------------
         self.action_space = vehicle.action_space
-
-        if self.render_mode == "human":
-            # Initialize pygame
-            pygame.init()
-            pygame.display.set_caption("Otter RL")
-            self.clock = pygame.time.Clock()
-
-            # Make a screen and fill it with a background colour
-            self.screen = pygame.display.set_mode(
-                [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
-            self.screen.fill(self.map.OCEAN_BLUE)
-            # self.particles = []
-
-    def reset(self, seed=None):
-        if self.seed is not None:
-            self.eta = self.random_eta()
-        else:
-            self.eta = self.eta_init.copy()
-
-        # self.eta = self.eta_init.copy()
-        self.nu = np.zeros(6, float)
-        self.u = np.zeros(2, float)
-
-        self.has_crashed = False
-        self.has_docked = False
-        self.dock_timer = 0
-
-        observation = self.get_observation()
-        info = {}
-
-        if self.render_mode == "human":
-            self.render()
-
-        return observation, info
 
     def step(self, action):
         beta_c, V_c = self.current_force()

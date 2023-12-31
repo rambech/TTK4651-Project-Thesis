@@ -8,7 +8,7 @@ from gymnasium import spaces
 import pygame
 
 from vehicle import Otter
-from maps import SimpleMap
+from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, ssa, R2D
 
 
@@ -22,80 +22,72 @@ class Env(gym.Env):
         "render_fps": 20
     }
 
-    def __init__(self, vehicle: Otter, map: SimpleMap, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  threshold=[1, D2R(10)], random_weather=False) -> None:
+    def __init__(self) -> None:
         super(Env, self).__init__()
         """
         Initialises DPEnv() object
         """
 
-        self.vehicle = vehicle
-        self.map = map
-        self.eta_d = None   # Must be overwritten
-        self.target = None  # Must be overwritten
-        self.dt = self.vehicle.dt
-        self.bounds = self.map.bounds
-        self.fps = FPS
+        # Must be overwritten
+        self.vehicle = None
+        self.dt = None
+        self.bounds = None
+        self.fps = self.metadata["render_fps"]
 
-        self.seed = seed
+        self.seed = None
+
+        # ---
+        # Map
+        # ---
+        self.map = None
+        self.eta_d = None
+        self.target = None
+        self.obstacles = None
+        self.quay = None
+        self.closest_edge = ((0, 0), (0, 0))
 
         # Initial conditions
-        if seed is not None:
-            # Make random initial condition and weather
-            np.random.seed(seed)
-            self.eta = self.random_eta()
-
-        else:
-            # Use default initial conditions and weather
-            self.eta_init = eta_init.copy()  # Save initial pose
-            self.eta = eta_init              # Initialize pose
-            self.nu = np.zeros(6, float)     # Init velocity
-            self.u = np.zeros(2, float)      # Init control vector
+        self.eta = np.zeros(6, float)       # Init eta
+        self.eta_init = self.eta.copy()     # Save init eta
+        self.nu = np.zeros(6, float)        # Init velocity
+        self.u = np.zeros(2, float)         # Init control vector
 
         # Weather
-        self.random_weather = random_weather
+        self.random_weather = None
         self.beta_c, self.V_c = self.current_force()
 
         # -----------------
         # Observation space
         # -----------------
-        N_min, E_min, N_max, E_max = self.bounds
-        self.eta_max = np.array([N_max, E_max, vehicle.limits["psi_max"]])
-        self.eta_min = np.array([N_min, E_min, vehicle.limits["psi_min"]])
-        self.nu_max = vehicle.limits["nu_max"]
-        self.nu_min = vehicle.limits["nu_min"]
+        self.observation_space = None
 
-        upper = np.concatenate(
-            (self.eta_max, self.nu_max), axis=None).astype(np.float32)
-        lower = np.concatenate(
-            (self.eta_min, self.nu_min), axis=None).astype(np.float32)
-
-        self.observation_size = (upper.size,)
-
-        self.observation_space = spaces.Box(
-            lower, upper, self.observation_size)
-        self.action_space = vehicle.action_space
+        # ------------
+        # Action space
+        # ------------
+        self.action_space = None
 
         # --------------
         # End conditions
         # --------------
+        self.eta_max = None
+
         # Fail
         seconds_limit = 60
-        self.step_limit = seconds_limit*FPS  # [step]
+        self.step_limit = seconds_limit*self.fps  # [step]
         self.step_count = 0
 
         # Success
         s_seconds = 5
-        self.thres = threshold          # [m, rad]
-        self.stay_time = FPS*s_seconds  # [step]
+        # Must be overwritten
+        self.thres = None             # [m, rad]
+        self.stay_time = self.fps*s_seconds  # [step]
         self.stay_timer = None
 
         # ---------
         # Rendering
         # ---------
-        self.metadata["render_fps"] = FPS
-
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.render_mode = render_mode
+        self.render_mode = None
+        assert self.render_mode is None or self.render_mode in self.metadata["render_modes"]
 
         if self.render_mode == "human":
             # Initialize pygame
@@ -107,7 +99,6 @@ class Env(gym.Env):
             self.screen = pygame.display.set_mode(
                 [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
             self.screen.fill(self.map.OCEAN_BLUE)
-            # self.particles = []
 
     def reset(self, seed=None):
         if self.seed is not None:
@@ -117,7 +108,6 @@ class Env(gym.Env):
 
         self.beta_c, self.V_c = self.current_force()
 
-        # self.eta = self.eta_init.copy()
         self.nu = np.zeros(6, float)
         self.u = np.zeros(2, float)
 
@@ -133,66 +123,8 @@ class Env(gym.Env):
 
         return observation, info
 
-    def step(self, action):
-        terminated = False
-        self.step_count += 1
-
-        # Simulate vehicle at a higher rate than the RL step
-        step_rate = 1/(self.dt*self.fps)
-        assert (
-            step_rate % 1 == 0
-        ), f"Step rate must be a positive integer, got {step_rate}. \
-            Make sure the vehicle FPS is a multiple of the RL FPS"
-
-        for _ in range(int(step_rate)):
-            self.nu, self.u = self.vehicle.rl_step(
-                self.eta, self.nu, self.u, action, self.beta_c, self.V_c)
-            self.eta = attitudeEuler(self.eta, self.nu, self.dt)
-
-        observation = self.get_observation()
-        reward = r_gaussian(observation)  # + r_surge(observation) + r_time()
-
-        # Start counting when vessel is
-        # within the threshold
-        # if self.stay_timer is None:
-        #     if self.in_area():
-        #         self.stay_timer = 0
-        # else:
-        #     # If the vessel stays in the area
-        #     # continue to count
-        #     if self.in_area():
-        #         self.stay_timer += 1
-        #     else:
-        #         self.stay_timer = None
-        if self.in_area():
-            if self.stay_timer is None:
-                self.stay_timer = 0
-            else:
-                self.stay_timer += 1
-
-            # Cancel time reward when in area
-            # reward -= r_time()
-        else:
-            self.stay_timer = None
-
-        if self.step_count >= self.step_limit:
-            terminated = True
-            reward = -10
-
-        if self.success():
-            terminated = True
-            reward = 1000
-
-        if self.crashed():
-            terminated = True
-            reward = -1000
-
-        if self.render_mode == "human":
-            self.render()
-
-        truncated = False
-        info = {}
-        return observation, reward, terminated, truncated, info
+    def step(self):
+        ...
 
     def render(self):
         """
@@ -209,6 +141,9 @@ class Env(gym.Env):
             # Make a screen and fill it with a background colour
             self.screen = pygame.display.set_mode(
                 [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
+
+        for obstacle in self.obstacles:
+            self.screen.blit(obstacle.surf, obstacle.rect)
 
         self.screen.fill(self.map.OCEAN_BLUE)
 
@@ -256,14 +191,7 @@ class Env(gym.Env):
             pygame.quit()
 
     def get_observation(self):
-        eta_error = self.eta - self.eta_d
-        pos_error = np.concatenate(
-            (eta_error[0:2], ssa(eta_error[-1])), axis=None)
-        vel_error = np.concatenate(
-            (self.nu[0:2], self.nu[-1]), axis=None)
-
-        return np.concatenate((pos_error, vel_error),
-                              axis=None).astype(np.float32)
+        ...
 
     def crashed(self) -> bool:
         for corner in self.vehicle.corners(self.eta):
