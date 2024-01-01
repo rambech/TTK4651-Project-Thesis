@@ -11,6 +11,24 @@ from vehicle import Otter
 
 from utils import D2R
 
+import pygame
+
+# Keystroke inputs
+from pygame.locals import (
+    K_UP,
+    K_DOWN,
+    K_LEFT,
+    K_RIGHT,
+    K_ESCAPE,
+    K_TAB,
+    KEYDOWN,
+    K_q,
+    K_w,
+    K_a,
+    K_s,
+    QUIT,
+)
+
 # TODO: Make it possible to add disturbances using keystrokes,
 #       with side arrows determining direction and up and down
 #       determining the magnitude
@@ -19,7 +37,7 @@ from utils import D2R
 # TODO: Make plotting tools for later plotting
 
 # To test RL or not to test RL that is the question
-RL = False
+RL = True
 
 env_type = "DP"
 random_weather = False
@@ -40,7 +58,7 @@ vehicle = Otter(dt=1/VEHICLE_FPS)
 map = SimpleMap()
 if env_type == "docking":
     env = ForwardDockingEnv(vehicle, map, seed=seed,
-                            render_mode=None, FPS=RL_FPS)
+                            render_mode="human", FPS=RL_FPS)
 
 elif env_type == "DP":
     env = DPEnv(vehicle, map, seed, eta_init=eta_init, render_mode="human",
@@ -51,8 +69,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = "PPO-DP-44"
-    load_iteration = "28800000"
+    folder_name = "PPO-DP-48-no-timelimit"
+    load_iteration = "600000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
@@ -73,11 +91,14 @@ if RL == True:
         terminated = False
         print(f"Obs: {obs}")
         cunt = 0
+        cum_reward = 0
         while not terminated:
             action, _ = model.predict(obs)
             obs, reward, terminated, trunc, info = env.step(action)
+            cum_reward += reward
             print(f"Timestep: {cunt}")
             print(f"Reward: {reward}")
+            print(f"Cum reward: {cum_reward}")
             if env_type == "DP":
                 print(f"Observation: \n \
                         delta_x:    {obs[0]} \n \
@@ -86,6 +107,12 @@ if RL == True:
                         u:          {obs[3]} \n \
                         v:          {obs[4]} \n \
                         r:          {obs[5]} \n")
+
+            for event in pygame.event.get():
+                if event.type == KEYDOWN:
+                    if event.key == K_TAB:
+                        terminated = True
+
             cunt += 1
 
     env.close()
@@ -94,23 +121,6 @@ else:
     """
     Standard simulation parameters
     """
-    import pygame
-
-    # Keystroke inputs
-    from pygame.locals import (
-        K_UP,
-        K_DOWN,
-        K_LEFT,
-        K_RIGHT,
-        K_ESCAPE,
-        K_TAB,
-        KEYDOWN,
-        K_q,
-        K_w,
-        K_a,
-        K_s,
-        QUIT,
-    )
 
     episodes = 10
 

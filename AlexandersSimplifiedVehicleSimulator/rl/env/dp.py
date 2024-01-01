@@ -22,7 +22,7 @@ from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, ssa, R2D
 
-from rl.rewards import r_gaussian, r_time, r_surge, r_euclidean
+from rl.rewards import r_gaussian, r_time, r_surge, r_euclidean, r_in_area
 
 # TODO: Make sure it crashes when it's supposed to
 
@@ -43,7 +43,7 @@ class DPEnv(gym.Env):
         "render_fps": FPS,
     }
 
-    def __init__(self, vehicle: Otter, map: SimpleMap, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  threshold=[1, D2R(10)], random_weather=False) -> None:
+    def __init__(self, vehicle: Otter, map: SimpleMap, seed: int = None, render_mode=None, FPS: int = 50, eta_init=np.zeros(6, float),  threshold=1, random_weather=False) -> None:
         super(DPEnv, self).__init__()
         """
         Initialises DPEnv() object
@@ -160,7 +160,7 @@ class DPEnv(gym.Env):
 
     def step(self, action):
         terminated = False
-        self.step_count += 1
+        # self.step_count += 1
 
         # Simulate vehicle at a higher rate than the RL step
         step_rate = 1/(self.dt*self.fps)
@@ -177,12 +177,12 @@ class DPEnv(gym.Env):
         observation = self.get_observation()
 
         # r_gaussian(observation) r_surge(observation)
-        shape = r_euclidean(observation) + r_surge(observation)
+        shape = r_euclidean(observation)  # + r_surge(observation)
+
+        if np.linalg.norm(observation[0:2]) < 2:
+            shape += 1
 
         reward = shape
-
-        if np.linalg.norm(observation[0:2]) < 3:
-            reward += 1
 
         if self.prev_shape:
             reward -= self.prev_shape
@@ -196,13 +196,9 @@ class DPEnv(gym.Env):
                 self.stay_timer += 1
 
             # Give reward if inside area
-            reward += 1
+            # reward += 1
         else:
             self.stay_timer = None
-
-        if self.step_count >= self.step_limit:
-            terminated = True
-            reward = -100
 
         if self.success():
             terminated = True
@@ -211,6 +207,10 @@ class DPEnv(gym.Env):
         if self.crashed():
             terminated = True
             reward = -1000
+
+        # if self.step_count >= self.step_limit:
+        #     terminated = True
+        #     reward = -100
 
         if self.render_mode == "human":
             self.render()
@@ -361,8 +361,7 @@ class DPEnv(gym.Env):
 
     def in_area(self):
         dist = np.linalg.norm(self.eta[0:2] - self.eta_d[0:2], 2)
-        ang = abs(self.eta[-1] - self.eta_d[-1])
-        if dist <= self.thres[0] and ang <= self.thres[1]/2:
+        if dist <= self.thres[0]:
             return True
 
         return False

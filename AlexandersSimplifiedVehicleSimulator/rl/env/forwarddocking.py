@@ -23,7 +23,7 @@ from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa
 
-from rl.rewards import norm
+from rl.rewards import r_euclidean, r_surge
 
 # TODO: Use SSA
 # TODO: Make it possible to have the current change during an episode
@@ -74,6 +74,9 @@ class ForwardDockingEnv(Env):
         self.closest_edge = ((0, 0), (0, 0))
 
         self.seed = seed
+
+        # Add obstacles
+        self.obstacles = self.map.obstacles
 
         # Add quay
         self.quay = self.map.quay
@@ -129,7 +132,27 @@ class ForwardDockingEnv(Env):
         # ------------
         self.action_space = vehicle.action_space
 
+        # ---------
+        # Rendering
+        # ---------
+        assert self.render_mode is None or self.render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
+        if self.render_mode == "human":
+            # Initialize pygame
+            pygame.init()
+            pygame.display.set_caption("Otter RL")
+            self.clock = pygame.time.Clock()
+
+            # Make a screen and fill it with a background colour
+            self.screen = pygame.display.set_mode(
+                [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
+            self.screen.fill(self.map.OCEAN_BLUE)
+
     def step(self, action):
+        terminated = False
+        # self.step_count += 1
+
         beta_c, V_c = self.current_force()
 
         # Simulate vehicle at a higher rate than the RL step
@@ -139,90 +162,62 @@ class ForwardDockingEnv(Env):
         ), f"Step rate must be a positive integer, got {step_rate}. \
             Make sure the vehicle FPS is a multiple of the RL FPS"
 
+        # Step simulator
         for _ in range(int(step_rate)):
             self.nu, self.u = self.vehicle.rl_step(
                 self.eta, self.nu, self.u, action, beta_c, V_c)
             self.eta = attitudeEuler(self.eta, self.nu, self.dt)
 
+        # -----------
+        # Observation
+        # -----------
+        observation = self.get_observation()
+
+        # -------
+        # Rewards
+        # -------
+        shape = r_euclidean(observation) + r_surge(observation)
+        reward = shape
+        if np.linalg.norm(observation[0:2]) < 3:
+            reward += 1
+
+        if self.prev_shape:
+            reward -= self.prev_shape
+
+        self.prev_shape = shape
+
+        if self.in_area():
+            if self.stay_timer is None:
+                self.stay_timer = 0
+            else:
+                self.stay_timer += 1
+
+            # Give reward if inside area
+            reward += 1
+        else:
+            self.stay_timer = None
+
+        # if self.step_count >= self.step_limit:
+        #     terminated = True
+        #     reward = -100
+
+        if self.success():
+            terminated = True
+            reward = 1000
+
         if self.crashed():
             terminated = True
-            self.has_crashed = True
-        elif self.docked():
-            terminated = True
-            self.has_docked = True
-        else:
-            terminated = False
-
-        reward = norm(self.eta, self.eta_d, self.has_crashed, self.has_docked)
-        observation = self.get_observation()
+            reward = -1000
 
         if self.render_mode == "human":
             self.render()
+            for obstacle in self.obstacles:
+                self.screen.blit(obstacle.surf, obstacle.rect)
+            self.screen.blit(self.quay.surf, self.quay.rect)
 
         truncated = False
         info = {}
         return observation, reward, terminated, truncated, info
-
-    def render(self):
-        """
-        Updates screen with the changes that has happened with
-        the vehicle and map/environment
-        """
-
-        if not self.screen and self.render_mode == "human":
-            # Initialize pygame
-            pygame.init()
-            pygame.display.set_caption("Otter RL")
-            self.clock = pygame.time.Clock()
-
-            # Make a screen and fill it with a background colour
-            self.screen = pygame.display.set_mode(
-                [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
-
-        self.screen.fill(self.map.OCEAN_BLUE)
-
-        # Render obstacles
-        for obstacle in self.map.obstacles:
-            self.screen.blit(obstacle.surf, obstacle.rect)
-
-        # Render target pose to screen
-        self.screen.blit(self.target.image, self.target.rect)
-
-        # Render quay to screen
-        self.screen.blit(self.quay.surf, self.quay.rect)
-
-        # Render vehicle to screen
-        vessel_image, self.vessel_rect = self.vehicle.render(
-            self.eta, self.map.origin)
-        self.screen.blit(vessel_image, self.vessel_rect)
-
-        # Speedometer
-        U = np.linalg.norm(self.nu[0:2], 2)
-        font = pygame.font.SysFont("Times New Roman", 12)
-        speed = font.render(
-            f"SOG: {np.round(U, 2)} [m/s]", 1, (0, 0, 0))
-        self.screen.blit(speed, (10, self.map.BOX_LENGTH-20))
-
-        # Position
-        x = np.round(self.eta[0])
-        y = np.round(self.eta[1])
-        position = font.render(f"NED: ({x}, {y})", 1, (0, 0, 0))
-        self.screen.blit(position, (10, self.map.BOX_LENGTH-32))
-
-        # Thruster revolutions
-        n1 = np.round(self.u[0])
-        n2 = np.round(self.u[1])
-        rpm = font.render(f"THR: ({n1}, {n2} [%])", 1, (0, 0, 0))
-        self.screen.blit(rpm, (10, self.map.BOX_LENGTH-44))
-
-        pygame.event.pump()
-        pygame.display.flip()
-        self.clock.tick(self.fps)
-
-    def close(self):
-        if self.screen:
-            pygame.display.quit()
-            pygame.quit()
 
     def get_observation(self):
         delta_eta = self.eta - self.eta_d
@@ -293,42 +288,3 @@ class ForwardDockingEnv(Env):
         angle = bearing - self.eta[-1]
 
         return dist, angle
-
-    def current_force(self) -> tuple[float, float]:
-        """
-        Three modes, random changing, keystroke and random static
-
-        Random changing
-        ---------------
-        The current can change in both magnitude and direction during
-        an episode
-
-        Keystroke
-        ---------
-        Current changes during an episode by user input via the arrow keys
-
-        Random static
-        -------------
-        The current is random in magnitude and direction, but is static
-        through an episode
-
-        Parameters
-        ----------
-            self
-
-        Returns
-        -------
-            beta_c, V_c : tuple[float, float]
-                Angle and magnitude of current
-        """
-        return 0.0, 0.0
-
-    def random_eta(self):
-        padding = 2  # [m]
-        x_init = np.random.uniform(
-            self.bounds[0] + padding, self.bounds[2] - self.quay.length - padding)
-        y_init = np.random.uniform(
-            self.bounds[1] + padding, self.bounds[3] - padding)
-        psi_init = ssa(np.random.uniform(-np.pi, np.pi))
-
-        return np.array([x_init, y_init, 0, 0, 0, psi_init], float)

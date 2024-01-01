@@ -83,22 +83,7 @@ class Env(gym.Env):
         self.stay_time = self.fps*s_seconds  # [step]
         self.stay_timer = None
 
-        # ---------
-        # Rendering
-        # ---------
-        self.render_mode = None
-        assert self.render_mode is None or self.render_mode in self.metadata["render_modes"]
-
-        if self.render_mode == "human":
-            # Initialize pygame
-            pygame.init()
-            pygame.display.set_caption("Otter RL")
-            self.clock = pygame.time.Clock()
-
-            # Make a screen and fill it with a background colour
-            self.screen = pygame.display.set_mode(
-                [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
-            self.screen.fill(self.map.OCEAN_BLUE)
+        self.prev_shape = None
 
     def reset(self, seed=None):
         if self.seed is not None:
@@ -142,8 +127,11 @@ class Env(gym.Env):
             self.screen = pygame.display.set_mode(
                 [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
 
+        print(f"obstacles: {self.obstacles}")
         for obstacle in self.obstacles:
             self.screen.blit(obstacle.surf, obstacle.rect)
+
+        self.screen.blit(self.quay.surf, self.quay.rect)
 
         self.screen.fill(self.map.OCEAN_BLUE)
 
@@ -194,11 +182,7 @@ class Env(gym.Env):
         ...
 
     def crashed(self) -> bool:
-        for corner in self.vehicle.corners(self.eta):
-            if abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
-                return True
-
-        return False
+        ...
 
     def current_force(self) -> tuple[float, float]:
         """
@@ -256,7 +240,9 @@ class Env(gym.Env):
             self.bounds[0] + padding, self.bounds[2] - padding)
         y_init = np.random.uniform(
             self.bounds[1] + padding, self.bounds[3] - padding)
-        psi_init = ssa(np.random.uniform(-np.pi, np.pi))
+        ang2d = np.arctan2(
+            y_init - self.eta_d[1], x_init - self.eta_d[0],) - np.pi
+        psi_init = np.random.uniform(ang2d-np.pi/2, ang2d+np.pi/2)
 
         return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
 

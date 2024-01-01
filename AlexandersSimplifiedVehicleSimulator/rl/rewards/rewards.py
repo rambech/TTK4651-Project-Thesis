@@ -117,4 +117,10 @@ def r_euclidean(obs):
     r = - 100 * norm((x, y), 2)
     """
 
-    return - 10 * np.linalg.norm(obs[0:2], 2) - abs(obs[2])
+    # TODO: Maybe increase the reward to det a bigger difference
+    # Makes no sense to have a global heading reward!
+    return - 10 * np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
+
+
+def r_in_area(in_area):
+    return 1 if in_area else 0
