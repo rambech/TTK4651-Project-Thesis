@@ -43,7 +43,7 @@ env_type = "DP"
 random_weather = False
 seed = 1
 timestep_multiplier = 5
-threshold = [3, D2R(90)]
+threshold = 1
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
@@ -69,8 +69,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = "PPO-DP-48-no-timelimit"
-    load_iteration = "600000"
+    folder_name = "PPO-DP-2-simple-euclidean-no-seed-weather"
+    load_iteration = "14000000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
@@ -129,6 +129,7 @@ else:
         terminated = False
         print(f"Obs: {obs}")
         cunt = 0
+        cum_reward = 0
         action = np.zeros(2, float)  # [-1, 1]
         while not terminated:
             for event in pygame.event.get():
@@ -170,8 +171,10 @@ else:
                     action = np.zeros(2, float)  # [-1, 1]
 
             obs, reward, terminated, trunc, info = env.step(action)
+            cum_reward += reward
             print(f"Timestep: {cunt}")
             print(f"Reward: {reward}")
+            print(f"Cum reward: {cum_reward}")
             if env_type == "DP":
                 print(f"Observation: \n \
                         delta_x:    {obs[0]} \n \

@@ -14,14 +14,14 @@ from utils import D2R
 # Training settings
 model_type = "PPO"
 env_type = "DP"
-random_weather = False
-seed = 1
-threshold = [1, D2R(90)]
+random_weather = True
+seed = None
+threshold = 1
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
-EPISODES = 5000
+EPISODES = 3000
 TIMESTEPS = 10000  # SECONDS*RL_FPS*timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 

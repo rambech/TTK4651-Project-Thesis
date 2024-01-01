@@ -124,3 +124,7 @@ def r_euclidean(obs):
 
 def r_in_area(in_area):
     return 1 if in_area else 0
+
+
+def r_backwards(obs):
+    return -0.05 if obs[3] < 0 else 0

@@ -176,16 +176,13 @@ class DPEnv(gym.Env):
 
         observation = self.get_observation()
 
-        # r_gaussian(observation) r_surge(observation)
-        shape = r_euclidean(observation)  # + r_surge(observation)
-
-        if np.linalg.norm(observation[0:2]) < 2:
-            shape += 1
-
-        reward = shape
-
+        shape = r_euclidean(observation)
+        reward = 0
         if self.prev_shape:
-            reward -= self.prev_shape
+            reward = shape - self.prev_shape
+
+        reward += r_in_area(self.in_area())
+        reward += r_time()
 
         self.prev_shape = shape
 
@@ -361,7 +358,7 @@ class DPEnv(gym.Env):
 
     def in_area(self):
         dist = np.linalg.norm(self.eta[0:2] - self.eta_d[0:2], 2)
-        if dist <= self.thres[0]:
+        if dist <= self.thres:
             return True
 
         return False
