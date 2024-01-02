@@ -34,7 +34,7 @@ def r_psi_e(psi_e, pos_e):
 
     if np.linalg.norm(pos_e, 2) <= 5:
         sigma = np.pi/4  # [rad]
-        C = 1            # Max. along axis reward
+        C = 0.3            # Max. along axis reward
 
         return C*np.exp(-1/(2*sigma**2) * psi_e**2)
     else:

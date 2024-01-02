@@ -12,6 +12,14 @@ Action space
 ------------
 a = [n_1, n_2]
 
+
+Reward
+------
+Max. reward per timestep: 0.4
+Min. reward per timestep: -0.4
+Max. reward without end conditions: 1000
+Min. reward without end conditions: -1000
+
 """
 
 import numpy as np
@@ -27,6 +35,8 @@ from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 from rl.rewards import r_euclidean, r_surge, r_gaussian
 
 # TODO: Double check psi_q
+# TODO: Make rewards with known lower and upper limits
+# TODO: Use max time reward
 
 # Environment parameters
 FPS = 20        # [fps] Frames per second
@@ -131,11 +141,19 @@ class ForwardDockingEnv(Env):
         # ------------
         self.action_space = vehicle.action_space
 
+        # --------------
+        # End conditions
+        # --------------
+        # Fail
+        time_limit = 120  # [s]
+        self.step_limit = time_limit*self.fps  # [step]
+        self.step_count = 0
+
         # Success
         s_seconds = 1
         # Must be overwritten
         self.thres = None             # [m, rad]
-        self.stay_time = self.fps*s_seconds  # [step]
+        self.stay_time = self.fps*s_seconds  # [step]git
         self.stay_timer = None
 
         # ---------
@@ -157,7 +175,7 @@ class ForwardDockingEnv(Env):
 
     def step(self, action):
         terminated = False
-        # self.step_count += 1
+        self.step_count += 1
 
         beta_c, V_c = self.current_force()
 
@@ -187,7 +205,7 @@ class ForwardDockingEnv(Env):
         # -------
         # shape = 10 * r_euclidean(observation)  # + r_surge(observation)
         reward = 0
-        reward += r_gaussian(observation)
+        reward += 0.4 * r_gaussian(observation)
 
         # if self.prev_shape:
         #     reward += shape - self.prev_shape
@@ -213,7 +231,7 @@ class ForwardDockingEnv(Env):
             terminated = True
             reward = 1000
 
-        if self.crashed():
+        if self.crashed() or self.time_out():
             terminated = True
             reward = -1000
 
@@ -231,7 +249,7 @@ class ForwardDockingEnv(Env):
         delta_eta = self.eta - self.eta_d
         west_corner, east_corner = self.quay.colliding_edge
         delta_eta_2D = np.concatenate(
-            (delta_eta[0:2], delta_eta[-1]), axis=None)
+            (delta_eta[0:2], ssa(delta_eta[-1])), axis=None)
         d_q, psi_q = self.direction_and_angle_to_quay()
         d_c_w = np.linalg.norm(self.eta[0:2] - np.asarray(west_corner))
         d_c_e = np.linalg.norm(self.eta[0:2] - np.asarray(east_corner))
@@ -267,10 +285,9 @@ class ForwardDockingEnv(Env):
             return True
         else:
             return False
-        # if (np.linalg.norm(self.eta_d[0:1] - self.eta[0:1]) <= self.thres[0] and abs(self.eta_d[-1] - self.eta[-1]) <= self.thres[1]):
-        #     return True
-        # else:
-        #     return False
+
+    def time_out(self):
+        return True if self.step_count >= self.step_limit else False
 
     def bump(self):
         """

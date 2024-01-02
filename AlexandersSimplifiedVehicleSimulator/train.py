@@ -15,7 +15,7 @@ from utils import D2R
 model_type = "PPO"
 env_type = "docking"
 random_weather = False
-seed = 2
+seed = 1
 threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
