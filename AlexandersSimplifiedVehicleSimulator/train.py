@@ -15,7 +15,7 @@ from utils import D2R
 model_type = "PPO"
 env_type = "docking"
 random_weather = False
-seed = 1
+seed = 2
 threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
@@ -72,7 +72,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "e7a901df8e572ac5667e14245337b6550ac3480f"
+    "Commit hash": "f9e45f9"
 }
 
 # Save the dictionary to the file

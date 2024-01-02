@@ -15,7 +15,7 @@ ax = plt.figure().add_subplot(projection='3d')
 x = y = np.arange(-15, 15, 0.1)
 X, Y = np.meshgrid(x, y)
 
-Z = r_pos_e((X-15, Y))
+Z = r_pos_e((X-10.75, Y))
 zeros = np.zeros((Z.shape))
 
 # Plot the 3D surface 'royalblue'
