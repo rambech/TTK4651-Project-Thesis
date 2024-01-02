@@ -26,9 +26,7 @@ from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
 from rl.rewards import r_euclidean, r_surge, r_gaussian
 
-# TODO: Make a docking successful as long as the front two corners are touching for 2 seconds
-# TODO: Change observation space to not include the obstacles
-# TODO: Change observation space to include end points of the quay
+# TODO: Double check psi_q
 
 # Environment parameters
 FPS = 20        # [fps] Frames per second
@@ -134,7 +132,7 @@ class ForwardDockingEnv(Env):
         self.action_space = vehicle.action_space
 
         # Success
-        s_seconds = 2
+        s_seconds = 1
         # Must be overwritten
         self.thres = None             # [m, rad]
         self.stay_time = self.fps*s_seconds  # [step]
@@ -261,8 +259,8 @@ class ForwardDockingEnv(Env):
         fs_corner = np.asarray(self.corners[0])
         _, d_c_fp = D2L(self.quay.colliding_edge, fp_corner)
         _, d_c_fs = D2L(self.quay.colliding_edge, fs_corner)
-        print(f"d_c_fp: {d_c_fp}")
-        print(f"d_c_fs: {d_c_fs}")
+        # print(f"d_c_fp: {d_c_fp}")
+        # print(f"d_c_fs: {d_c_fs}")
 
         if d_c_fp and d_c_fs <= 0.1:
             print("Docked!")

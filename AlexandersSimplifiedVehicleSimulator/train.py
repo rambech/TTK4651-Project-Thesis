@@ -13,7 +13,7 @@ from utils import D2R
 
 # Training settings
 model_type = "PPO"
-env_type = "DP"
+env_type = "docking"
 random_weather = False
 seed = 2
 threshold = 3

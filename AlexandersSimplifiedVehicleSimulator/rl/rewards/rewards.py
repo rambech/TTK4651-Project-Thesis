@@ -72,9 +72,9 @@ def r_pos_e(pos_e: np.ndarray) -> np.ndarray:
     reward : float
         Gaussian reward
     """
-    sigma = 5
+    sigma = 10
     var = sigma**2
-    C = 3
+    C = 2
     reward = C*np.exp(-(pos_e[0]**2/var + pos_e[1]**2/var)/2) - 1
     return reward
 
