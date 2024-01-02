@@ -37,9 +37,9 @@ from pygame.locals import (
 # TODO: Make plotting tools for later plotting
 
 # To test RL or not to test RL that is the question
-RL = True
+RL = False
 
-env_type = "DP"
+env_type = "docking"
 random_weather = False
 seed = 1
 timestep_multiplier = 5
@@ -69,8 +69,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = "PPO-DP-2-simple-euclidean-no-seed-weather"
-    load_iteration = "14000000"
+    folder_name = "PPO-DP-5"
+    load_iteration = "300000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
@@ -96,9 +96,7 @@ if RL == True:
             action, _ = model.predict(obs)
             obs, reward, terminated, trunc, info = env.step(action)
             cum_reward += reward
-            print(f"Timestep: {cunt}")
-            print(f"Reward: {reward}")
-            print(f"Cum reward: {cum_reward}")
+
             if env_type == "DP":
                 print(f"Observation: \n \
                         delta_x:    {obs[0]} \n \
@@ -107,6 +105,23 @@ if RL == True:
                         u:          {obs[3]} \n \
                         v:          {obs[4]} \n \
                         r:          {obs[5]} \n")
+
+            if env_type == "docking":
+                print(f"Observation: \n \
+                        delta_x:    {obs[0]} \n \
+                        delta_y:    {obs[1]} \n \
+                        delta_psi:  {obs[2]} \n \
+                        u:          {obs[3]} \n \
+                        v:          {obs[4]} \n \
+                        r:          {obs[5]} \n \
+                        d_q         {obs[6]} \n \
+                        psi_q       {obs[7]} \n \
+                        d_c_w       {obs[8]} \n \
+                        d_c_e       {obs[9]} \n")
+            cum_reward += reward
+            print(f"Timestep: {cunt}")
+            print(f"Reward: {reward}")
+            print(f"Cum reward: {cum_reward}")
 
             for event in pygame.event.get():
                 if event.type == KEYDOWN:
@@ -171,10 +186,6 @@ else:
                     action = np.zeros(2, float)  # [-1, 1]
 
             obs, reward, terminated, trunc, info = env.step(action)
-            cum_reward += reward
-            print(f"Timestep: {cunt}")
-            print(f"Reward: {reward}")
-            print(f"Cum reward: {cum_reward}")
             if env_type == "DP":
                 print(f"Observation: \n \
                         delta_x:    {obs[0]} \n \
@@ -183,6 +194,23 @@ else:
                         u:          {obs[3]} \n \
                         v:          {obs[4]} \n \
                         r:          {obs[5]} \n")
+
+            if env_type == "docking":
+                print(f"Observation: \n \
+                        delta_x:    {obs[0]} \n \
+                        delta_y:    {obs[1]} \n \
+                        delta_psi:  {obs[2]} \n \
+                        u:          {obs[3]} \n \
+                        v:          {obs[4]} \n \
+                        r:          {obs[5]} \n \
+                        d_q         {obs[6]} \n \
+                        psi_q       {obs[7]} \n \
+                        d_c_w       {obs[8]} \n \
+                        d_c_e       {obs[9]} \n")
+            cum_reward += reward
+            print(f"Timestep: {cunt}")
+            print(f"Reward: {reward}")
+            print(f"Cum reward: {cum_reward}")
             cunt += 1
 
     env.close()

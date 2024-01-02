@@ -72,7 +72,7 @@ def r_pos_e(pos_e: np.ndarray) -> np.ndarray:
     reward : float
         Gaussian reward
     """
-    sigma = 3
+    sigma = 5
     var = sigma**2
     C = 3
     reward = C*np.exp(-(pos_e[0]**2/var + pos_e[1]**2/var)/2) - 1
@@ -99,7 +99,7 @@ def r_surge(obs):
 
 
 def r_time():
-    return -1
+    return -0.01
 
 
 def r_gaussian(obs):
@@ -119,11 +119,11 @@ def r_euclidean(obs):
 
     # TODO: Maybe increase the reward to det a bigger difference
     # Makes no sense to have a global heading reward!
-    return - 10 * np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
+    return - np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
 
 
 def r_in_area(in_area):
-    return 1 if in_area else 0
+    return 0.1 if in_area else 0
 
 
 def r_backwards(obs):

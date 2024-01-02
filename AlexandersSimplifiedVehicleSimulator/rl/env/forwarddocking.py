@@ -15,37 +15,29 @@ a = [n_1, n_2]
 """
 
 import numpy as np
+import gymnasium as gym
 from gymnasium import spaces
 import pygame
 
 from .env import Env
 from vehicle import Otter
 from maps import SimpleMap, Target
-from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa
+from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
-from rl.rewards import r_euclidean, r_surge
+from rl.rewards import r_euclidean, r_surge, r_gaussian
 
-# TODO: Use SSA
-# TODO: Make it possible to have the current change during an episode
-# TODO: Make a docking threshold of some sort
-# TODO: Implement closest obstacle measure for the observation space
-# TODO: Implement distance and angle to closest point on the quay for the observation space
-# TODO: Visualise actuator usage
-# TODO: Optional: make observations into a dict
-# TODO: Add info dict
+# TODO: Make a docking successful as long as the front two corners are touching for 2 seconds
+# TODO: Change observation space to not include the obstacles
+# TODO: Change observation space to include end points of the quay
 
 # Environment parameters
-FPS = 50                          # [fps] Frames per second
+FPS = 20        # [fps] Frames per second
 
 # I have chosen the origin of NED positon to be
 # in the middle of the screen. This means that
 # the pygame coordinates are different to the
 # NED ones, RL and everything else is calculated
 # in NED, only rendering happens in the other coordinates.
-
-# Weather
-# SIDESLIP = 30           # [deg]
-# CURRENT_MAGNITUDE = 3   # [0]
 
 
 class ForwardDockingEnv(Env):
@@ -72,6 +64,7 @@ class ForwardDockingEnv(Env):
         self.bounds = self.map.bounds
         self.edges = self.map.colliding_edges
         self.closest_edge = ((0, 0), (0, 0))
+        self.corners = None
 
         self.seed = seed
 
@@ -112,15 +105,23 @@ class ForwardDockingEnv(Env):
         psi_q_max = np.pi
         psi_q_min = -psi_q_max
 
+        # Maximum distance to each quay corner
+        d_q_c_max = d_q_max
+
         # Maximum distance and angle to obstacle
-        d_o_max = d_q_max
-        psi_o_max = psi_q_max
-        psi_o_min = psi_q_min
+        # d_o_max = d_q_max
+        # psi_o_max = psi_q_max
+        # psi_o_min = psi_q_min
+
+        # upper = np.concatenate(
+        #     (self.eta_max, self.nu_max, d_q_max, psi_q_max, d_o_max, psi_o_max), axis=None).astype(np.float32)
+        # lower = np.concatenate(
+        #     (self.eta_min, self.nu_min, 0, psi_q_min, 0, psi_o_min), axis=None).astype(np.float32)
 
         upper = np.concatenate(
-            (self.eta_max, self.nu_max, d_q_max, psi_q_max, d_o_max, psi_o_max), axis=None).astype(np.float32)
+            (self.eta_max, self.nu_max, d_q_max, psi_q_max, d_q_c_max, d_q_c_max), axis=None).astype(np.float32)
         lower = np.concatenate(
-            (self.eta_min, self.nu_min, 0, psi_q_min, 0, psi_o_min), axis=None).astype(np.float32)
+            (self.eta_min, self.nu_min, 0, psi_q_min, 0, 0), axis=None).astype(np.float32)
 
         self.observation_size = (upper.size,)
 
@@ -131,6 +132,13 @@ class ForwardDockingEnv(Env):
         # Action space
         # ------------
         self.action_space = vehicle.action_space
+
+        # Success
+        s_seconds = 2
+        # Must be overwritten
+        self.thres = None             # [m, rad]
+        self.stay_time = self.fps*s_seconds  # [step]
+        self.stay_timer = None
 
         # ---------
         # Rendering
@@ -167,6 +175,9 @@ class ForwardDockingEnv(Env):
             self.nu, self.u = self.vehicle.rl_step(
                 self.eta, self.nu, self.u, action, beta_c, V_c)
             self.eta = attitudeEuler(self.eta, self.nu, self.dt)
+            self.corners = self.vehicle.corners(self.eta)
+            if self.crashed():
+                break
 
         # -----------
         # Observation
@@ -176,17 +187,16 @@ class ForwardDockingEnv(Env):
         # -------
         # Rewards
         # -------
-        shape = r_euclidean(observation) + r_surge(observation)
-        reward = shape
-        if np.linalg.norm(observation[0:2]) < 3:
-            reward += 1
+        # shape = 10 * r_euclidean(observation)  # + r_surge(observation)
+        reward = 0
+        reward += r_gaussian(observation)
 
-        if self.prev_shape:
-            reward -= self.prev_shape
+        # if self.prev_shape:
+        #     reward += shape - self.prev_shape
 
-        self.prev_shape = shape
+        # self.prev_shape = shape
 
-        if self.in_area():
+        if self.docked():
             if self.stay_timer is None:
                 self.stay_timer = 0
             else:
@@ -221,19 +231,21 @@ class ForwardDockingEnv(Env):
 
     def get_observation(self):
         delta_eta = self.eta - self.eta_d
+        west_corner, east_corner = self.quay.colliding_edge
         delta_eta_2D = np.concatenate(
             (delta_eta[0:2], delta_eta[-1]), axis=None)
         d_q, psi_q = self.direction_and_angle_to_quay()
-        d_o, psi_o = self.direction_and_angle_to_obs()
+        d_c_w = np.linalg.norm(self.eta[0:2] - np.asarray(west_corner))
+        d_c_e = np.linalg.norm(self.eta[0:2] - np.asarray(east_corner))
 
-        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, psi_q, d_o, psi_o),
+        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, psi_q, d_c_w, d_c_e),
                               axis=None).astype(np.float32)
 
     def crashed(self) -> bool:
-        for corner in self.vehicle.corners(self.eta):
+        for corner in self.corners:
             _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
             _, dist_corner_obs = D2L(self.closest_edge, corner)
-            if dist_corner_obs < 0.01:  # If vessel touches obstacle, simulation stops
+            if dist_corner_obs <= 0.01:  # If vessel touches obstacle, simulation stops
                 return True
             elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
                 return True
@@ -245,10 +257,22 @@ class ForwardDockingEnv(Env):
         return False
 
     def docked(self) -> bool:
-        if (np.linalg.norm(self.eta_d[0:1] - self.eta[0:1]) <= self.thres[0] and abs(self.eta_d[-1] - self.eta[-1]) <= self.thres[1]):
+        fp_corner = np.asarray(self.corners[-1])
+        fs_corner = np.asarray(self.corners[0])
+        _, d_c_fp = D2L(self.quay.colliding_edge, fp_corner)
+        _, d_c_fs = D2L(self.quay.colliding_edge, fs_corner)
+        print(f"d_c_fp: {d_c_fp}")
+        print(f"d_c_fs: {d_c_fs}")
+
+        if d_c_fp and d_c_fs <= 0.1:
+            print("Docked!")
             return True
         else:
             return False
+        # if (np.linalg.norm(self.eta_d[0:1] - self.eta[0:1]) <= self.thres[0] and abs(self.eta_d[-1] - self.eta[-1]) <= self.thres[1]):
+        #     return True
+        # else:
+        #     return False
 
     def bump(self):
         """
@@ -271,17 +295,43 @@ class ForwardDockingEnv(Env):
                               min_U_n*np.sin(alpha)*np.cos(beta)])
         self.nu = N2B(self.eta).dot(nu_n)
 
-    def direction_and_angle_to_obs(self):
-        angle = 0
-        dist = np.inf
-        for edge in self.edges:
-            bearing, range = D2L(edge, self.eta[0:2])
-            if range < dist:
-                angle = bearing - self.eta[-1]
-                dist = range
-                self.closest_edge = edge
+    def random_eta(self):
+        """
+        Spawn vehicle based on uniform distribution. 
+        2 meter buffer at the edges 
 
-        return dist, angle
+        Parameters
+        ----------
+        self
+
+        Returns
+        -------
+        eta_init : np.ndarray
+            Random initial position
+
+        """
+        padding = 2  # [m]
+        x_init = np.random.uniform(
+            self.bounds[0] + padding, self.bounds[2] - self.quay.length - padding)
+        y_init = np.random.uniform(
+            self.bounds[1] + padding, self.bounds[3] - padding)
+        ang2d = np.arctan2(
+            y_init - self.eta_d[1], x_init - self.eta_d[0],) - np.pi
+        psi_init = np.random.uniform(ang2d-np.pi/2, ang2d+np.pi/2)
+
+        return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
+
+    # def direction_and_angle_to_obs(self):
+    #     angle = 0
+    #     dist = np.inf
+    #     for edge in self.edges:
+    #         bearing, range = D2L(edge, self.eta[0:2])
+    #         if range < dist:
+    #             angle = bearing - self.eta[-1]
+    #             dist = range
+    #             self.closest_edge = edge
+
+    #     return dist, angle
 
     def direction_and_angle_to_quay(self):
         bearing, dist = D2L(self.quay.colliding_edge, self.eta[0:2])

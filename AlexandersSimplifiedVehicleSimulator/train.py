@@ -14,9 +14,9 @@ from utils import D2R
 # Training settings
 model_type = "PPO"
 env_type = "DP"
-random_weather = True
-seed = None
-threshold = 1
+random_weather = False
+seed = 2
+threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60

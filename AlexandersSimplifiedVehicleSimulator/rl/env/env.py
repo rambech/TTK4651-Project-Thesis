@@ -9,7 +9,7 @@ import pygame
 
 from vehicle import Otter
 from maps import SimpleMap, Target
-from utils import attitudeEuler, D2L, D2R, ssa, R2D
+from utils import attitudeEuler, D2L, D2R, ssa, R2D, N2S, N2S2D
 
 
 class Env(gym.Env):
@@ -77,10 +77,9 @@ class Env(gym.Env):
         self.step_count = 0
 
         # Success
-        s_seconds = 5
         # Must be overwritten
         self.thres = None             # [m, rad]
-        self.stay_time = self.fps*s_seconds  # [step]
+        self.stay_time = None  # [step]
         self.stay_timer = None
 
         self.prev_shape = None
@@ -127,13 +126,12 @@ class Env(gym.Env):
             self.screen = pygame.display.set_mode(
                 [self.map.BOX_WIDTH, self.map.BOX_LENGTH])
 
-        print(f"obstacles: {self.obstacles}")
+        self.screen.fill(self.map.OCEAN_BLUE)
+
         for obstacle in self.obstacles:
             self.screen.blit(obstacle.surf, obstacle.rect)
 
         self.screen.blit(self.quay.surf, self.quay.rect)
-
-        self.screen.fill(self.map.OCEAN_BLUE)
 
         # Render target pose to screen
         self.screen.blit(self.target.image, self.target.rect)
@@ -168,6 +166,21 @@ class Env(gym.Env):
         current = font.render(
             f"WTR: ({V_c}, {R2D(beta_c)} [m/s, degrees])", 1, (0, 0, 0))
         self.screen.blit(current, (10, self.map.BOX_LENGTH-56))
+
+        if self.quay and True:
+            for corner in self.vehicle.corners(self.eta):
+                corner_n = np.array([corner[0], corner[1], 0, 0, 0, 0])
+                corner_s = N2S(corner_n, self.vehicle.scale,
+                               self.map.origin)
+                pygame.draw.circle(self.screen, (255, 26, 117),
+                                   (corner_s[0], corner_s[1]), 2)
+
+            pygame.draw.line(self.screen, (136, 77, 255),
+                             N2S2D(self.quay.colliding_edge[0], self.map.scale, self.map.origin), N2S2D(self.quay.colliding_edge[1], self.map.scale, self.map.origin), 2)
+
+            for edge in self.edges:
+                pygame.draw.line(self.screen, (255, 26, 117),
+                                 N2S2D(edge[0], self.map.scale, self.map.origin), N2S2D(edge[1], self.map.scale, self.map.origin), 2)
 
         pygame.event.pump()
         pygame.display.flip()
@@ -221,30 +234,7 @@ class Env(gym.Env):
         return beta_c, V_c
 
     def random_eta(self):
-        """
-        Spawn vehicle based on uniform distribution. 
-        2 meter buffer at the edges 
-
-        Parameters
-        ----------
-        self
-
-        Returns
-        -------
-        eta_init : np.ndarray
-            Random initial position
-
-        """
-        padding = 2  # [m]
-        x_init = np.random.uniform(
-            self.bounds[0] + padding, self.bounds[2] - padding)
-        y_init = np.random.uniform(
-            self.bounds[1] + padding, self.bounds[3] - padding)
-        ang2d = np.arctan2(
-            y_init - self.eta_d[1], x_init - self.eta_d[0],) - np.pi
-        psi_init = np.random.uniform(ang2d-np.pi/2, ang2d+np.pi/2)
-
-        return np.array([x_init, y_init, 0, 0, 0, psi_init], float)
+        ...
 
     def in_area(self):
         dist = np.linalg.norm(self.eta[0:2] - self.eta_d[0:2], 2)
