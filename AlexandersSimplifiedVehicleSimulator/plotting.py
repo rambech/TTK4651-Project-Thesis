@@ -21,8 +21,8 @@ zeros = np.zeros((Z.shape))
 # Plot the 3D surface 'royalblue'
 ax.plot_surface(X, Y, Z, edgecolor="#2e7578", linewidth=0.5, rstride=8, cstride=8,
                 alpha=0.3)
-ax.plot_surface(X, Y, zeros, edgecolor='#d1eaeb', linewidth=0.2, rstride=8, cstride=8,
-                alpha=0.1)
+# ax.plot_surface(X, Y, zeros, edgecolor='#f4ac67', linewidth=0.2, rstride=8, cstride=8,
+#                 alpha=0.1)
 
 # Plot projections of the contours for each dimension.  By choosing offsets
 # that match the appropriate axes limits, the projected contours will sit on
@@ -31,7 +31,7 @@ ax.plot_surface(X, Y, zeros, edgecolor='#d1eaeb', linewidth=0.2, rstride=8, cstr
 # ax.contour(X, Y, Z, zdir='x', offset=-20, cmap='coolwarm')
 # ax.contour(X, Y, Z, zdir='y', offset=20, cmap='coolwarm')
 
-ax.set(xlim=(-16, 16), ylim=(-16, 16), zlim=(-1, 2),
+ax.set(xlim=(-16, 16), ylim=(-16, 16), zlim=(-1, 1),
        xlabel='N', ylabel='E', zlabel='R')
 
 

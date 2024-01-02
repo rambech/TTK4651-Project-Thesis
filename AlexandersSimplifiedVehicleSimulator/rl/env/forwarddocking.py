@@ -71,7 +71,7 @@ class ForwardDockingEnv(Env):
         self.dt = self.vehicle.dt
         self.bounds = self.map.bounds
         self.edges = self.map.colliding_edges
-        self.closest_edge = ((0, 0), (0, 0))
+        self.closest_edge = None
         self.corners = None
 
         self.seed = seed
@@ -219,6 +219,7 @@ class ForwardDockingEnv(Env):
                 self.stay_timer += 1
 
             # Give reward if inside area
+            print(f"Steps docked: {self.stay_timer}")
             reward += 1
         else:
             self.stay_timer = None
@@ -258,6 +259,7 @@ class ForwardDockingEnv(Env):
                               axis=None).astype(np.float32)
 
     def crashed(self) -> bool:
+        self.find_closest_edge()
         for corner in self.corners:
             _, dist_corner_quay = D2L(self.quay.colliding_edge, corner)
             _, dist_corner_obs = D2L(self.closest_edge, corner)
@@ -347,6 +349,14 @@ class ForwardDockingEnv(Env):
     #             self.closest_edge = edge
 
     #     return dist, angle
+
+    def find_closest_edge(self):
+        dist = np.inf
+        for edge in self.edges:
+            _, range = D2L(edge, self.eta[0:2])
+            if range < dist:
+                dist = range
+                self.closest_edge = edge
 
     def direction_and_angle_to_quay(self):
         bearing, dist = D2L(self.quay.colliding_edge, self.eta[0:2])
