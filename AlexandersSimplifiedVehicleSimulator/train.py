@@ -6,6 +6,7 @@ from rl.env import ForwardDockingEnv, DPEnv
 from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import D2R
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 # TODO: Make every model save to a new numbered folder,
 #       like the logs do automatically
@@ -15,14 +16,14 @@ from utils import D2R
 model_type = "PPO"
 env_type = "docking"
 random_weather = False
-seed = 2
+seed = 1
 threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
-EPISODES = 3000
-TIMESTEPS = 10000  # SECONDS*RL_FPS*timestep_multiplier
+EPISODES = 10000
+TIMESTEPS = SECONDS*RL_FPS*EPISODES  # *timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 
 test_name = input(f"Test name is {model_type}-{env_type}-")
@@ -72,12 +73,20 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "f9e45f9"
+    "Commit hash": "ebfcea3"
 }
 
 # Save the dictionary to the file
 with open(file_path, 'w') as json_file:
     json.dump(data, json_file, indent=2)
+
+checkpoint_callback = CheckpointCallback(
+    save_freq=RL_FPS*SECONDS*10,    # Save every tenth episode
+    save_path=model_path,
+    name_prefix=test_name,
+    save_replay_buffer=True,
+    save_vecnormalize=True,
+)
 
 env.reset(seed)
 if model_type == "PPO":
@@ -90,13 +99,17 @@ if model_type == "TD3":
 
     model = TD3("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
 
-for episode in range(1, EPISODES+1):
-    model.learn(total_timesteps=TIMESTEPS,
-                reset_num_timesteps=False, tb_log_name=model_type)
-    if episode % 10 == 0:
-        model.save(f"{model_path}/{TIMESTEPS*episode}")
 
-env.close()
+model.learn(total_timesteps=TIMESTEPS,
+            callback=checkpoint_callback, tb_log_name=model_type)
+
+# for episode in range(1, EPISODES+1):
+#     model.learn(total_timesteps=TIMESTEPS,
+#                 reset_num_timesteps=False, tb_log_name=model_type)
+#     if episode % 10 == 0:
+#         model.save(f"{model_path}/{TIMESTEPS*episode}")
+
+
 # for episode in range(1, EPISODES):
 #     env.reset()
 #     terminated = False
