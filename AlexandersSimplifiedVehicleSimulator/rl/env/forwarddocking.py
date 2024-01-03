@@ -282,7 +282,7 @@ class ForwardDockingEnv(Env):
         # print(f"d_c_fp: {d_c_fp}")
         # print(f"d_c_fs: {d_c_fs}")
 
-        if d_c_fp and d_c_fs <= 0.1:
+        if d_c_fp <= 0.1 and d_c_fs <= 0.1:
             print("Docked!")
             return True
         else:
