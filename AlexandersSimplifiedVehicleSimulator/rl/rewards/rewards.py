@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.linalg import inv, det
+from utils import ssa
 
 # TODO: Add turning penalty to avoid unnecessary turns
 
@@ -107,6 +108,17 @@ def r_euclidean(obs):
     # TODO: Maybe increase the reward to det a bigger difference
     # Makes no sense to have a global heading reward!
     return - np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
+
+
+def r_heading(obs, psi):
+    # Heading towards the goal position
+    ang2d = np.arctan2(obs[1], obs[0]) - np.pi
+    delta_psi = ssa(psi - ang2d)
+
+    sigma = np.pi/4    # [rad]
+    C = 0.3            # Max. along axis reward
+
+    return C*np.exp(-1/(2*sigma**2) * delta_psi**2)
 
 
 def r_in_area(in_area):

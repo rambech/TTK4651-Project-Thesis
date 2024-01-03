@@ -32,7 +32,7 @@ from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
-from rl.rewards import r_euclidean, r_surge, r_gaussian
+from rl.rewards import r_euclidean, r_surge, r_gaussian, r_pos_e, r_heading
 
 # TODO: Double check psi_q
 # TODO: Make rewards with known lower and upper limits
@@ -205,7 +205,8 @@ class ForwardDockingEnv(Env):
         # -------
         # shape = 10 * r_euclidean(observation)  # + r_surge(observation)
         reward = 0
-        reward += 0.4 * r_gaussian(observation)
+        reward += 0.4 * (r_pos_e(observation) +
+                         r_heading(observation, self.eta[-1]))
 
         # if self.prev_shape:
         #     reward += shape - self.prev_shape
@@ -333,7 +334,7 @@ class ForwardDockingEnv(Env):
         y_init = np.random.uniform(
             self.bounds[1] + padding, self.bounds[3] - padding)
         ang2d = np.arctan2(
-            y_init - self.eta_d[1], x_init - self.eta_d[0],) - np.pi
+            y_init - self.eta_d[1], x_init - self.eta_d[0]) - np.pi
         # psi_init = np.random.uniform(ang2d-np.pi/2, ang2d+np.pi/2)
         psi_init = np.random.uniform(ang2d, ang2d)
 
