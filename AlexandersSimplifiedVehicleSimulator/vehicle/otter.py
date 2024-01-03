@@ -297,7 +297,7 @@ class Otter(Vehicle):
             + tau_crossflow
             - np.matmul(C, nu_r)
             - np.matmul(self.G, eta)
-            + g_0
+            # + g_0
         )
 
         # np.matmul(self.Minv, sum_tau)  # USV dynamics
