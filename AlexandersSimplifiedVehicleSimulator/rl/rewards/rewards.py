@@ -85,9 +85,9 @@ def r_surge(obs):
     # return 0
     # return - np.linalg.norm(obs[3:6], 3)
     if np.linalg.norm(obs[0:2], 2) <= 5:
-        return 0
+        return 1
     elif 0.257 < obs[3] < 2.58:
-        return 0
+        return 1
     else:
         return -1
 
@@ -118,8 +118,11 @@ def r_euclidean(obs):
 
 def r_heading(obs, psi):
     # Heading towards the goal position
-    ang2d = np.arctan2(obs[1], obs[0]) - np.pi
-    delta_psi = ssa(psi - ang2d)
+    if np.linalg.norm(obs[0:2], 2) <= 5:
+        delta_psi = obs[2]
+    else:
+        ang2d = np.arctan2(obs[1], obs[0]) - np.pi
+        delta_psi = ssa(psi - ang2d)
 
     sigma = np.pi/4    # [rad]
     C = 0.5            # Max. along axis reward

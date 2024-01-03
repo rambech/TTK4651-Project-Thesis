@@ -209,7 +209,6 @@ class ForwardDockingEnv(Env):
 
         if self.prev_dist is not None:
             reward += dist - self.prev_dist
-            print(f"dot: {reward}")
         self.prev_dist = dist
 
         reward += 0.4 * (r_pos_e(observation) +
