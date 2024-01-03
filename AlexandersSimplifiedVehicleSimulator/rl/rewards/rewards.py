@@ -83,7 +83,13 @@ def r_surge(obs):
     #         return 0.1
 
     # return 0
-    return - np.linalg.norm(obs[3:6], 3)
+    # return - np.linalg.norm(obs[3:6], 3)
+    if np.linalg.norm(obs[0:2], 2) <= 5:
+        return 0
+    elif 0.257 < obs[3] < 2.58:
+        return 0
+    else:
+        return -1
 
 
 def r_time():
@@ -107,7 +113,7 @@ def r_euclidean(obs):
 
     # TODO: Maybe increase the reward to det a bigger difference
     # Makes no sense to have a global heading reward!
-    return - np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
+    return - 10 * np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
 
 
 def r_heading(obs, psi):

@@ -98,6 +98,7 @@ class Env(gym.Env):
         # self.has_crashed = False
         self.stay_timer = None
         self.step_count = 0
+        self.prev_dist = None
 
         observation = self.get_observation()
         info = {}
