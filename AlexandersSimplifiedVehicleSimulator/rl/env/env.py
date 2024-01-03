@@ -133,6 +133,14 @@ class Env(gym.Env):
 
         self.screen.blit(self.quay.surf, self.quay.rect)
 
+        # if True:
+        #     for i in range(1000):
+        #         x, y = N2S(self.random_eta(),
+        #                    self.map.scale, self.map.origin)[0:2].tolist()
+
+        #         pygame.draw.circle(self.screen, (255, 26, 117),
+        #                            (x, y), 2)
+
         # Render target pose to screen
         self.screen.blit(self.target.image, self.target.rect)
 

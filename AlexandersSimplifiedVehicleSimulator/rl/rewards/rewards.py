@@ -60,7 +60,7 @@ def r_pos_e(pos_e: np.ndarray) -> np.ndarray:
     reward : float
         Gaussian reward
     """
-    sigma = 5
+    sigma = 10
     var = sigma**2
     C = 2
     reward = C*np.exp(-(pos_e[0]**2/var + pos_e[1]**2/var)/2) - 1
@@ -116,7 +116,7 @@ def r_heading(obs, psi):
     delta_psi = ssa(psi - ang2d)
 
     sigma = np.pi/4    # [rad]
-    C = 0.3            # Max. along axis reward
+    C = 0.5            # Max. along axis reward
 
     return C*np.exp(-1/(2*sigma**2) * delta_psi**2)
 

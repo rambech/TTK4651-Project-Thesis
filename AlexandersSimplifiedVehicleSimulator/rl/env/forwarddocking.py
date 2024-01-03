@@ -233,9 +233,13 @@ class ForwardDockingEnv(Env):
             terminated = True
             reward = 1000
 
-        if self.crashed() or self.time_out():
+        if self.time_out():
             terminated = True
-            reward = -1000
+            reward = -10
+
+        if self.crashed():
+            terminated = True
+            reward = -10000
 
         if self.render_mode == "human":
             self.render()
