@@ -37,11 +37,11 @@ from pygame.locals import (
 # TODO: Make plotting tools for later plotting
 
 # To test RL or not to test RL that is the question
-RL = False
+RL = True
 
 env_type = "docking"
 random_weather = False
-seed = None
+seed = 1
 timestep_multiplier = 5
 threshold = 1
 SECONDS = 120
@@ -69,8 +69,9 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-28"
-    load_iteration = "PPO-docking-28_5544000_steps"
+    folder_name = f"{model_type}-{env_type}-30"
+    it_name = "1128000"
+    load_iteration = f"{folder_name}_{it_name}_steps"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
