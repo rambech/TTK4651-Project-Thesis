@@ -34,9 +34,7 @@ from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
 from rl.rewards import r_euclidean, r_time, r_surge, r_gaussian, r_pos_e, r_heading
 
-# TODO: Double check psi_q
-# TODO: Make rewards with known lower and upper limits
-# TODO: Use max time reward
+# TODO: Add a limit to how hard you can hit the quay, possibly one knot
 
 # Environment parameters
 FPS = 20        # [fps] Frames per second
@@ -231,7 +229,7 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             terminated = True
-            reward = 10*(self.step_limit - self.step_count)
+            reward = 20*(self.step_limit - self.step_count)
 
         if self.time_out():
             terminated = True
@@ -273,6 +271,8 @@ class ForwardDockingEnv(Env):
             elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
                 return True
             elif dist_corner_quay < 0.01:
+                if np.linalg.norm(self.nu[0:3], 2) > 0.514:
+                    return True
                 self.bump()
             else:
                 continue

@@ -376,10 +376,10 @@ class Otter(Vehicle):
 
     def _denormalise(self, action):
         u = np.zeros(2).astype(np.float32)
-        for idx, n in enumerate(action):
-            if n < 0:
-                u[idx] = n*111
+        for idx, a in enumerate(action):
+            if a < 0:
+                u[idx] = a*111
             else:
-                u[idx] = n*113
+                u[idx] = a*113
 
         return u
