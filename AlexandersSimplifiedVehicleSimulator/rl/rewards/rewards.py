@@ -93,7 +93,7 @@ def r_surge(obs):
 
 
 def r_time():
-    return -0.01
+    return -0.1
 
 
 def r_gaussian(obs):
