@@ -41,7 +41,7 @@ RL = False
 
 env_type = "docking"
 random_weather = False
-seed = 1
+seed = None
 timestep_multiplier = 5
 threshold = 1
 SECONDS = 120
@@ -49,7 +49,7 @@ VEHICLE_FPS = 60
 RL_FPS = 20
 # EPISODES = 10000
 # TIMESTEPS = SECONDS*RL_FPS  # *timestep_multiplier
-eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+eta_init = np.array([-10, 0, 0, 0, 0, 0], float)
 eta_d = np.array([25-0.75-1, 0, 0, 0, 0, 0], float)
 
 # Initialize vehicle
@@ -57,7 +57,7 @@ vehicle = Otter(dt=1/VEHICLE_FPS)
 
 map = SimpleMap()
 if env_type == "docking":
-    env = ForwardDockingEnv(vehicle, map, seed=seed,
+    env = ForwardDockingEnv(vehicle, map, seed=seed, eta_init=eta_init,
                             render_mode="human", FPS=RL_FPS)
 
 elif env_type == "DP":
@@ -69,8 +69,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-21"
-    load_iteration = "PPO-docking-21_19728000_steps"
+    folder_name = f"{model_type}-{env_type}-27"
+    load_iteration = "PPO-docking-27_3864000_steps"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"

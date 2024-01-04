@@ -16,7 +16,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 model_type = "PPO"
 env_type = "docking"
 random_weather = False
-seed = 1
+seed = None
 threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
@@ -57,7 +57,7 @@ if env_type == "docking":
                             render_mode=None, FPS=RL_FPS)
 
 elif env_type == "DP":
-    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+    eta_init = np.array([-10, 0, 0, 0, 0, 0], float)
     env = DPEnv(vehicle, map, seed, render_mode=None,
                 FPS=RL_FPS, threshold=threshold, random_weather=random_weather)
 
@@ -73,7 +73,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "4c938ca"
+    "Commit hash": "fcf50cb"
 }
 
 # Save the dictionary to the file
