@@ -231,7 +231,7 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             terminated = True
-            reward = 10000
+            reward = 10*(self.step_limit - self.step_count)
 
         if self.time_out():
             terminated = True

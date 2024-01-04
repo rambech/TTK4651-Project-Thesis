@@ -16,7 +16,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 model_type = "PPO"
 env_type = "docking"
 random_weather = False
-seed = 1
+seed = None
 threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
@@ -73,7 +73,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "de3be33"
+    "Commit hash": "04923b9"
 }
 
 # Save the dictionary to the file
