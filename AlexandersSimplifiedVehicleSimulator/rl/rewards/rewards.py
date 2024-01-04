@@ -125,7 +125,7 @@ def r_heading(obs, psi):
         delta_psi = ssa(psi - ang2d)
 
     sigma = np.pi/8    # [rad]
-    C = 1            # Max. along axis reward
+    C = 0.5            # Max. along axis reward
 
     return C*np.exp(-1/(2*sigma**2) * delta_psi**2)
 

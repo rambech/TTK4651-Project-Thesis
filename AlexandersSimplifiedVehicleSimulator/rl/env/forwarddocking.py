@@ -210,9 +210,9 @@ class ForwardDockingEnv(Env):
         #     reward += dist - self.prev_dist
         # self.prev_dist = dist
 
-        reward += 0.4 * (r_pos_e(observation) +
-                         r_heading(observation, self.eta[-1]))
-        reward += r_time()
+        reward += (r_pos_e(observation) +
+                   r_heading(observation, self.eta[-1]))
+        # reward += r_time()
 
         port_touch, stb_touch = self.docked()
         if port_touch and stb_touch:
@@ -223,15 +223,15 @@ class ForwardDockingEnv(Env):
 
             # Give reward if inside area
             print(f"Steps docked: {self.stay_timer}")
-            reward += 1
+            reward += 10
         elif port_touch or stb_touch:
-            reward += 0.5
+            reward += 1
         else:
             self.stay_timer = None
 
         if self.success():
             terminated = True
-            reward = 1000
+            reward = 10000
 
         if self.time_out():
             terminated = True
