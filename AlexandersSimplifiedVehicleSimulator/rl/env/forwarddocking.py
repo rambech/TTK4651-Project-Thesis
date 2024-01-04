@@ -205,15 +205,15 @@ class ForwardDockingEnv(Env):
         # -------
         # shape = 10 * r_euclidean(observation)  # + r_surge(observation)
         reward = 0
-        dist = r_euclidean(observation)
+        # dist = r_euclidean(observation)
 
-        if self.prev_dist is not None:
-            reward += dist - self.prev_dist
-        self.prev_dist = dist
+        # if self.prev_dist is not None:
+        #     reward += dist - self.prev_dist
+        # self.prev_dist = dist
 
-        # reward += 0.4 * (r_pos_e(observation) +
-        #                  r_heading(observation, self.eta[-1]))
-        reward += r_time()
+        reward += 0.4 * (r_pos_e(observation) +
+                         r_heading(observation, self.eta[-1]))
+        # reward += r_time()
 
         # if self.prev_shape:
         #     reward += shape - self.prev_shape

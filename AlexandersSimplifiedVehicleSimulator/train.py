@@ -73,7 +73,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "1ac5e92"
+    "Commit hash": "87bfc68"
 }
 
 # Save the dictionary to the file
@@ -102,20 +102,3 @@ if model_type == "TD3":
 
 model.learn(total_timesteps=TIMESTEPS,
             callback=checkpoint_callback, tb_log_name=model_type)
-
-# for episode in range(1, EPISODES+1):
-#     model.learn(total_timesteps=TIMESTEPS,
-#                 reset_num_timesteps=False, tb_log_name=model_type)
-#     if episode % 10 == 0:
-#         model.save(f"{model_path}/{TIMESTEPS*episode}")
-
-
-# for episode in range(1, EPISODES):
-#     env.reset()
-#     terminated = False
-#     while not terminated:
-#         obs, reward, terminated, trunc, info = env.step(
-#             env.action_space.sample())
-
-#     if episode % 10 == 0:
-#         model.save(f"{models_dir}/{TIMESTEPS*episode}")
