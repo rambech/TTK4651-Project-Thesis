@@ -204,15 +204,15 @@ class ForwardDockingEnv(Env):
         # Rewards
         # -------
         reward = 0
-        # dist = r_euclidean(observation)
+        dist = r_euclidean(observation)
 
-        # if self.prev_dist is not None:
-        #     reward += dist - self.prev_dist
-        # self.prev_dist = dist
+        if self.prev_dist is not None:
+            reward += max(0, dist - self.prev_dist)
+        self.prev_dist = dist
 
         reward += (r_pos_e(observation) +
                    r_heading(observation, self.eta[-1]))
-        # reward += r_time()
+        reward += r_time()
 
         port_touch, stb_touch = self.docked()
         if port_touch and stb_touch:
