@@ -8,11 +8,12 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rc('text.latex', preamble=r'\usepackage{lmodern,amsmath,amsfonts}')
 
-fig, ax = plt.subplots(figsize=(8, 8))
+fig, ax = plt.subplots(figsize=(7, 7))
 ax.set_aspect("equal")
 
 pos = (0, 0)
 psi = np.pi/8
+file_name = "docking_scenario"
 
 
 def otter(pos, psi):
@@ -52,7 +53,7 @@ b = ax.add_patch(bounds)
 asv = ax.add_patch(otter(pos, psi))
 # TODO: Add path by simply making a path and adding boat-patches along it
 
-ax.legend([q, rest, b, asv], ["Permitted area",
+ax.legend([q, rest, b, otter((0, 0), np.pi/2)], ["Permitted area",
           "Restricted area", r'$\mathbb{S}$', "ASV"])
 
 ax.set(xlim=(-20, 20), ylim=(-20, 20),
@@ -61,4 +62,5 @@ ax.set(xlim=(-20, 20), ylim=(-20, 20),
 if False:
     ax.text(13, 5, r'$\mathbb{S}$', fontsize=12)
 
+plt.savefig(f'figures/{file_name}.pdf', bbox_inches='tight')
 plt.show()

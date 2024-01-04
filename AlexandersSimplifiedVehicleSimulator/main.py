@@ -69,8 +69,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-27"
-    load_iteration = "PPO-docking-27_3864000_steps"
+    folder_name = f"{model_type}-{env_type}-28"
+    load_iteration = "PPO-docking-28_5544000_steps"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"

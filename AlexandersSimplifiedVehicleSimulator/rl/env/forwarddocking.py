@@ -204,17 +204,18 @@ class ForwardDockingEnv(Env):
         # Rewards
         # -------
         reward = 0
-        dist = r_euclidean(observation)
+        # dist = r_euclidean(observation)
 
-        if self.prev_dist is not None:
-            reward += dist - self.prev_dist
-        self.prev_dist = dist
+        # if self.prev_dist is not None:
+        #     reward += dist - self.prev_dist
+        # self.prev_dist = dist
 
-        # reward += 0.4 * (r_pos_e(observation) +
-        #                  r_heading(observation, self.eta[-1]))
-        # reward += r_time()
+        reward += 0.4 * (r_pos_e(observation) +
+                         r_heading(observation, self.eta[-1]))
+        reward += r_time()
 
-        if self.docked():
+        port_touch, stb_touch = self.docked()
+        if port_touch and stb_touch:
             if self.stay_timer is None:
                 self.stay_timer = 0
             else:
@@ -223,6 +224,8 @@ class ForwardDockingEnv(Env):
             # Give reward if inside area
             print(f"Steps docked: {self.stay_timer}")
             reward += 1
+        elif port_touch or stb_touch:
+            reward += 0.5
         else:
             self.stay_timer = None
 
@@ -286,9 +289,15 @@ class ForwardDockingEnv(Env):
 
         if d_c_fp <= 0.1 and d_c_fs <= 0.1:
             print("Docked!")
-            return True
+            return True, True
+        elif d_c_fp <= 0.1 and d_c_fs > 0.1:
+            print("Touch port!")
+            return True, False
+        elif d_c_fp > 0.1 and d_c_fs <= 0.1:
+            print("Touch starboard!")
+            return False, True
         else:
-            return False
+            return False, False
 
     def time_out(self):
         return True if self.step_count >= self.step_limit else False
