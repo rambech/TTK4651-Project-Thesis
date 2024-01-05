@@ -41,7 +41,7 @@ RL = False
 
 env_type = "docking"
 random_weather = False
-seed = 1
+seed = 0
 timestep_multiplier = 5
 threshold = 1
 SECONDS = 120
@@ -69,12 +69,11 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-31"
-    it_name = "4200000"
-    load_iteration = f"{folder_name}_{it_name}_steps"
+    folder_name = f"{model_type}-{env_type}-47-b"
+    load_iteration = "3792000"
 
     models_dir = f"models"
-    model_path = f"{models_dir}/{folder_name}/{load_iteration}.zip"
+    model_path = f"{models_dir}/{folder_name}/{folder_name}_{load_iteration}_steps.zip"
     assert (
         os.path.exists(model_path)
     ), f"{model_path} does not exist"

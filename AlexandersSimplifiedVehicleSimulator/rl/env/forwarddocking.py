@@ -205,7 +205,7 @@ class ForwardDockingEnv(Env):
         dist = r_euclidean(observation)
 
         if self.prev_dist is not None:
-            reward += max(0, dist - self.prev_dist)
+            reward += max(0, dist - self.prev_dist)**2
         self.prev_dist = dist
 
         reward += (r_pos_e(observation) +
