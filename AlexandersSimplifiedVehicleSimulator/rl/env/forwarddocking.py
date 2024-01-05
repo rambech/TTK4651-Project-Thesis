@@ -210,7 +210,7 @@ class ForwardDockingEnv(Env):
 
         reward += (r_pos_e(observation) +
                    r_heading(observation, self.eta[-1]))
-        reward += r_time()
+        # reward += r_time()
 
         port_touch, stb_touch = self.docked()
         if port_touch and stb_touch:
