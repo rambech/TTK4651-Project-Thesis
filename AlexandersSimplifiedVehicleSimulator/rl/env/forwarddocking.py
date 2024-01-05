@@ -34,9 +34,7 @@ from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
 from rl.rewards import r_euclidean, r_time, r_surge, r_gaussian, r_pos_e, r_heading
 
-# TODO: Double check psi_q
-# TODO: Make rewards with known lower and upper limits
-# TODO: Use max time reward
+# TODO: Register as crashed when going through the quay
 
 # Environment parameters
 FPS = 20        # [fps] Frames per second
@@ -231,7 +229,9 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             terminated = True
-            reward = 10*(self.step_limit - self.step_count)
+            lower_reward_limit = 10000
+            success_time_reward = 10*(self.step_limit - self.step_count)
+            reward = max(lower_reward_limit, success_time_reward)
 
         if self.time_out():
             terminated = True
@@ -274,6 +274,8 @@ class ForwardDockingEnv(Env):
                 return True
             elif dist_corner_quay < 0.01:
                 self.bump()
+            elif corner[0] > self.quay.colliding_edge[0][0] + 0.05:
+                return True
             else:
                 continue
 
