@@ -41,7 +41,7 @@ RL = False
 
 env_type = "docking"
 random_weather = False
-seed = None
+seed = 1
 timestep_multiplier = 5
 threshold = 1
 SECONDS = 120

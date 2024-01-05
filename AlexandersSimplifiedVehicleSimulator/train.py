@@ -16,7 +16,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 model_type = "PPO"
 env_type = "docking"
 random_weather = False
-seed = None
+seed = 1
 threshold = 3
 timestep_multiplier = 5
 SECONDS = 120
