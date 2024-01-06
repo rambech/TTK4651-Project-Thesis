@@ -113,7 +113,7 @@ def r_euclidean(obs):
 
     # TODO: Maybe increase the reward to det a bigger difference
     # Makes no sense to have a global heading reward!
-    return - 50 * np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
+    return - 40 * np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
 
 
 def r_heading(obs, psi):
