@@ -204,7 +204,7 @@ class ForwardDockingEnv(Env):
         reward = 0
         dist = r_euclidean(observation)
 
-        if self.prev_dist is not None:
+        if self.prev_dist is not None and np.linalg.norm(observation[0:2], 2) > 5 and np.linalg.norm(observation[3:5], 2) < 2.75:
             reward += max(0, dist - self.prev_dist)**2
         self.prev_dist = dist
 
@@ -229,7 +229,7 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             terminated = True
-            lower_reward_limit = 10000
+            lower_reward_limit = 20000
             # Time not spent must be rewarded more than time
             # spent into the quay
             success_time_reward = 20*(self.step_limit - self.step_count)
