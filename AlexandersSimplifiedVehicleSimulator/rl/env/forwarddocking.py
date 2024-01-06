@@ -34,7 +34,7 @@ from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
 from rl.rewards import r_euclidean, r_time, r_surge, r_gaussian, r_pos_e, r_heading
 
-# TODO: Register as crashed when going through the quay
+# TODO: Maybe increase success even more?
 
 # Environment parameters
 FPS = 20        # [fps] Frames per second
@@ -148,7 +148,7 @@ class ForwardDockingEnv(Env):
         self.step_count = 0
 
         # Success
-        s_seconds = 1
+        s_seconds = 2
         # Must be overwritten
         self.thres = None             # [m, rad]
         self.stay_time = self.fps*s_seconds  # [step]git
@@ -223,7 +223,7 @@ class ForwardDockingEnv(Env):
             print(f"Steps docked: {self.stay_timer}")
             reward += 10
         elif port_touch or stb_touch:
-            reward += 1
+            reward += 0.5
         else:
             self.stay_timer = None
 

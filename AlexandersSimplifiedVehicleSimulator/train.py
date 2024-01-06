@@ -22,7 +22,7 @@ timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
-EPISODES = 10000
+EPISODES = 20000
 TIMESTEPS = SECONDS*RL_FPS*EPISODES  # *timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 
@@ -73,7 +73,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "100e7dd"
+    "Commit hash": "4d50387"
 }
 
 # Save the dictionary to the file

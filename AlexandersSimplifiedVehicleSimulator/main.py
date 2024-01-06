@@ -69,8 +69,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-48-a"
-    load_iteration = "3984000"
+    folder_name = f"{model_type}-{env_type}-49-a"
+    load_iteration = "24000000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{folder_name}_{load_iteration}_steps.zip"
