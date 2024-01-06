@@ -10,7 +10,7 @@ plt.rcParams.update({
     'text.latex.preamble': [r'\usepackage{lmodern}']
 })
 
-fig, ax = plt.subplots(projection='3d', figsize=(8, 8))
+ax = plt.figure().add_subplot(projection='3d')
 # ax1 = plt.figure().add_subplot(projection='3d')
 x = y = np.arange(-15, 15, 0.1)
 X, Y = np.meshgrid(x, y)

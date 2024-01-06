@@ -34,7 +34,7 @@ from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
 from rl.rewards import r_euclidean, r_time, r_surge, r_gaussian, r_pos_e, r_heading
 
-# TODO: Add a limit to how hard you can hit the quay, possibly one knot
+# TODO: Maybe increase success even more?
 
 # Environment parameters
 FPS = 20        # [fps] Frames per second
@@ -148,7 +148,7 @@ class ForwardDockingEnv(Env):
         self.step_count = 0
 
         # Success
-        s_seconds = 1
+        s_seconds = 2
         # Must be overwritten
         self.thres = None             # [m, rad]
         self.stay_time = self.fps*s_seconds  # [step]git
@@ -205,12 +205,12 @@ class ForwardDockingEnv(Env):
         dist = r_euclidean(observation)
 
         if self.prev_dist is not None:
-            reward += max(0, dist - self.prev_dist)
+            reward += max(0, dist - self.prev_dist)**2
         self.prev_dist = dist
 
         reward += (r_pos_e(observation) +
                    r_heading(observation, self.eta[-1]))
-        reward += r_time()
+        # reward += r_time()
 
         port_touch, stb_touch = self.docked()
         if port_touch and stb_touch:
@@ -223,13 +223,15 @@ class ForwardDockingEnv(Env):
             print(f"Steps docked: {self.stay_timer}")
             reward += 10
         elif port_touch or stb_touch:
-            reward += 1
+            reward += 0.5
         else:
             self.stay_timer = None
 
         if self.success():
             terminated = True
-            reward = 20*(self.step_limit - self.step_count)
+            lower_reward_limit = 10000
+            success_time_reward = 10*(self.step_limit - self.step_count)
+            reward = max(lower_reward_limit, success_time_reward)
 
         if self.time_out():
             terminated = True
@@ -274,6 +276,8 @@ class ForwardDockingEnv(Env):
                 if np.linalg.norm(self.nu[0:3], 2) > 0.514:
                     return True
                 self.bump()
+            elif corner[0] > self.quay.colliding_edge[0][0] + 0.05:
+                return True
             else:
                 continue
 
