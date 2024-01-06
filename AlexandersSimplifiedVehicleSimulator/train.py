@@ -73,7 +73,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "ec845b2"
+    "Commit hash": "main 6dcd4d7"
 }
 
 # Save the dictionary to the file
