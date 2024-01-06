@@ -117,7 +117,7 @@ def r_euclidean(obs):
 
 
 def r_come_closer(obs, prev_obs):
-    return 10 * obs[6] * (r_euclidean(obs) - r_euclidean(prev_obs))
+    return 10 * np.linalg.norm(obs[0:2], 2) * (r_euclidean(obs) - r_euclidean(prev_obs))
 
 
 def r_heading(obs, psi):
