@@ -70,8 +70,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-55-a"
-    episode = 500
+    folder_name = f"{model_type}-{env_type}-59-a"
+    episode = 1500
     load_iteration = f"{episode*2400}"  # "12000000"
 
     models_dir = f"models"

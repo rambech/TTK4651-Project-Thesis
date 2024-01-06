@@ -113,18 +113,24 @@ def r_euclidean(obs):
 
     # TODO: Maybe increase the reward to det a bigger difference
     # Makes no sense to have a global heading reward!
-    return - 100 * np.linalg.norm(obs[0:3], 2)  # - abs(obs[2])
+    return - 100 * np.linalg.norm(obs[0:3], 3)  # - abs(obs[2])
 
 
 def r_quay(obs):
-    return - obs[6] - abs(obs[2])
+    return - 100 * (obs[6] + abs(obs[2]))
 
 
 def r_come_closer(obs, prev_obs):
+    r = 0
     if np.linalg.norm(obs[0:2], 2) <= 5:
-        return 10*(r_quay(obs) - r_quay(prev_obs))
+        r = (r_quay(obs) - r_quay(prev_obs))
+    elif abs(r_euclidean(obs) - r_euclidean(prev_obs)) > 0:
+        r = min(12.86**1.2, (r_euclidean(obs) - r_euclidean(prev_obs))**1.2)
+
+    if isinstance(r, (int, float)):
+        return r
     else:
-        return min(12.86, r_euclidean(obs) - r_euclidean(prev_obs))**1.1
+        return 0
 
 
 def r_heading(obs, psi):
