@@ -341,11 +341,11 @@ class ForwardDockingEnv(Env):
 
         """
         padding = 2  # [m]
-        # x_init = np.random.uniform(
-        #     self.bounds[0] + padding, self.bounds[2] - self.quay.length - 15)
+        x_init = np.random.uniform(
+            self.bounds[0] + padding, self.bounds[2] - self.quay.length - 15)
         y_init = np.random.uniform(
             self.bounds[1] + padding, self.bounds[3] - padding)
-        x_init = -10
+        # x_init = -10
         ang2d = np.arctan2(
             y_init - self.eta_d[1], x_init - self.eta_d[0]) - np.pi
         # psi_init = np.random.uniform(ang2d-np.pi/2, ang2d+np.pi/2)
