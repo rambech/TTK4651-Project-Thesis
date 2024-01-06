@@ -113,7 +113,7 @@ def r_euclidean(obs):
 
     # TODO: Maybe increase the reward to det a bigger difference
     # Makes no sense to have a global heading reward!
-    return - 100 * np.linalg.norm(obs[0:3], 2)  # - abs(obs[2])
+    return - 100 * np.linalg.norm(obs[0:2], 2)  # - abs(obs[2])
 
 
 def r_heading(obs, psi):
@@ -125,7 +125,7 @@ def r_heading(obs, psi):
         delta_psi = ssa(psi - ang2d)
 
     sigma = np.pi/8    # [rad]
-    C = 0.5            # Max. along axis reward
+    C = 1            # Max. along axis reward
 
     return C*np.exp(-1/(2*sigma**2) * delta_psi**2)
 
