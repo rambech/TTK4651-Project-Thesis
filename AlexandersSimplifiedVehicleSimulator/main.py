@@ -38,7 +38,7 @@ from pygame.locals import (
 # 41354.87404895712
 
 # To test RL or not to test RL that is the question
-RL = True
+RL = False
 
 env_type = "docking"
 random_weather = False
@@ -70,8 +70,9 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-50-b"
-    load_iteration = "12000000"
+    folder_name = f"{model_type}-{env_type}-52-b"
+    episode = 500
+    load_iteration = f"{episode*2400}"  # "12000000"
 
     models_dir = f"models"
     model_path = f"{models_dir}/{folder_name}/{folder_name}_{load_iteration}_steps.zip"

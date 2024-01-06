@@ -32,7 +32,7 @@ from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import attitudeEuler, D2L, D2R, N2B, B2N, ssa, R2D
 
-from rl.rewards import r_euclidean, r_time, r_surge, r_gaussian, r_pos_e, r_heading
+from rl.rewards import r_euclidean, r_time, r_surge, r_gaussian, r_pos_e, r_heading, r_come_closer
 
 # TODO: Maybe increase success even more?
 
@@ -202,11 +202,14 @@ class ForwardDockingEnv(Env):
         # Rewards
         # -------
         reward = 0
-        dist = r_euclidean(observation)
+        # dist = r_euclidean(observation)
 
-        if self.prev_dist is not None:
-            reward += min(30, max(0, dist - self.prev_dist)**2)
-        self.prev_dist = dist
+        # if self.prev_dist is not None:
+        #     reward += min(30, max(0, dist - self.prev_dist)**2)
+        # self.prev_dist = dist
+        if self.prev_obs is not None:
+            reward += r_come_closer(observation, self.prev_obs)
+        self.prev_obs = observation
 
         reward += (r_pos_e(observation) +
                    r_heading(observation, self.eta[-1]))

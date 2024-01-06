@@ -83,6 +83,7 @@ class Env(gym.Env):
         self.stay_timer = None
 
         self.prev_shape = None
+        self.prev_obs = None
 
     def reset(self, seed=None):
         if self.seed is not None:
@@ -99,6 +100,7 @@ class Env(gym.Env):
         self.stay_timer = None
         self.step_count = 0
         self.prev_dist = None
+        self.prev_obs = None
 
         observation = self.get_observation()
         info = {}
