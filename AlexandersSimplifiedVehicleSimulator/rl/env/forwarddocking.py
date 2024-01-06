@@ -278,8 +278,8 @@ class ForwardDockingEnv(Env):
             elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
                 return True
             elif dist_corner_quay < 0.01:
-                if np.linalg.norm(self.nu[0:3], 2) > 0.514:
-                    return True
+                # if np.linalg.norm(self.nu[0:3], 2) > 0.514:
+                #     return True
                 self.bump()
             elif corner[0] > self.quay.colliding_edge[0][0] + 0.05:
                 return True
