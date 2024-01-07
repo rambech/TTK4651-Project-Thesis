@@ -22,7 +22,7 @@ timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
-EPISODES = 20000
+EPISODES = 10000
 TIMESTEPS = SECONDS*RL_FPS*EPISODES  # *timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 

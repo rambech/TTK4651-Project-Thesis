@@ -117,7 +117,7 @@ def r_euclidean(obs):
 
 
 def r_quay(obs):
-    return - 100 * (obs[6] + abs(obs[2]))
+    return - 100 * (obs[6] + abs(obs[7]))
 
 
 def r_come_closer(obs, prev_obs):
