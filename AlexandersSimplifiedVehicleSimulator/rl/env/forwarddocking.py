@@ -233,11 +233,11 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             terminated = True
-            lower_reward_limit = 20000
+            lower_reward_limit = 10000
             # Time not spent must be rewarded more than time
             # spent into the quay
             success_time_reward = 20*(self.step_limit - self.step_count)
-            reward = max(lower_reward_limit, success_time_reward)
+            reward = min(lower_reward_limit, success_time_reward)
 
         if self.time_out():
             terminated = True

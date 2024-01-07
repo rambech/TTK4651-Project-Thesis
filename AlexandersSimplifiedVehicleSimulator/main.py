@@ -38,7 +38,7 @@ from pygame.locals import (
 # 41354.87404895712
 
 # To test RL or not to test RL that is the question
-RL = True
+RL = False
 
 env_type = "docking"
 random_weather = False
