@@ -224,7 +224,7 @@ class ForwardDockingEnv(Env):
                 self.stay_timer += 1
 
             # Give reward if inside area
-            print(f"Steps docked: {self.stay_timer}")
+            # print(f"Steps docked: {self.stay_timer}")
             reward += 10 * (self.stay_timer + 1)
         elif port_touch or stb_touch:
             reward += 0.5
@@ -232,6 +232,7 @@ class ForwardDockingEnv(Env):
             self.stay_timer = None
 
         if self.success():
+            print("Success!")
             terminated = True
             lower_reward_limit = 10000
             # Time not spent must be rewarded more than time
@@ -298,13 +299,13 @@ class ForwardDockingEnv(Env):
         # print(f"d_c_fs: {d_c_fs}")
 
         if d_c_fp <= 0.2 and d_c_fs <= 0.2:
-            print("Docked!")
+            # print("Docked!")
             return True, True
         elif d_c_fp <= 0.1 and d_c_fs > 0.1:
-            print("Touch port!")
+            # print("Touch port!")
             return True, False
         elif d_c_fp > 0.1 and d_c_fs <= 0.1:
-            print("Touch starboard!")
+            # print("Touch starboard!")
             return False, True
         else:
             return False, False

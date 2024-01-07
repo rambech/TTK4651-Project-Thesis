@@ -207,7 +207,7 @@ class SidewaysDockingEnv(Env):
                 self.stay_timer += 1
 
             # Give reward if inside area
-            print(f"Steps docked: {self.stay_timer}")
+            # print(f"Steps docked: {self.stay_timer}")
             reward += 10 * (self.stay_timer + 1)
         elif port_touch or stb_touch:
             reward += 0.5
@@ -215,6 +215,7 @@ class SidewaysDockingEnv(Env):
             self.stay_timer = None
 
         if self.success():
+            print("Success!")
             terminated = True
             lower_reward_limit = 10000
             # Time not spent must be rewarded more than time
@@ -281,13 +282,13 @@ class SidewaysDockingEnv(Env):
         # print(f"d_c_fs: {d_c_fs}")
 
         if d_c_as <= 0.2 and d_c_fs <= 0.2:
-            print("Docked!")
+            # print("Docked!")
             return True, True
         elif d_c_as <= 0.1 and d_c_fs > 0.1:
-            print("Touch aft!")
+            # print("Touch aft!")
             return True, False
         elif d_c_as > 0.1 and d_c_fs <= 0.1:
-            print("Touch forward!")
+            # print("Touch forward!")
             return False, True
         else:
             return False, False
