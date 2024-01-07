@@ -117,15 +117,15 @@ def r_euclidean(obs):
 
 
 def r_quay(obs):
-    return - 100 * (obs[6] + abs(obs[7]))
+    return - 100 * obs[6]  # + abs(obs[7]))
 
 
-def r_come_closer(obs, prev_obs):
+def r_come_closer(obs, prev_obs, step_count):
     r = 0
     difference = r_euclidean(obs) - r_euclidean(prev_obs)
     if np.linalg.norm(obs[0:2], 2) <= 5:
         r = (r_quay(obs) - r_quay(prev_obs))
-    elif r_euclidean(obs) - r_euclidean(prev_obs) > 0:
+    elif r_euclidean(obs) - r_euclidean(prev_obs) > 0 and step_count < 500:
         # sign = np.sign(difference)
         r = min(80, (difference)**2)
     return r

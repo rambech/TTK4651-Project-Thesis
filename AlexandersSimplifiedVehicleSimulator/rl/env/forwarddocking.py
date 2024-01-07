@@ -208,7 +208,8 @@ class ForwardDockingEnv(Env):
         #     reward += min(30, max(0, dist - self.prev_dist)**2)
         # self.prev_dist = dist
         if self.prev_obs is not None:
-            reward += r_come_closer(observation, self.prev_obs)
+            reward += r_come_closer(observation,
+                                    self.prev_obs, self.step_count)
         self.prev_obs = observation
 
         reward += (r_pos_e(observation) +
@@ -265,7 +266,7 @@ class ForwardDockingEnv(Env):
         d_c_w = np.linalg.norm(self.eta[0:2] - np.asarray(west_corner))
         d_c_e = np.linalg.norm(self.eta[0:2] - np.asarray(east_corner))
 
-        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, psi_q, d_c_w, d_c_e),
+        return np.concatenate((delta_eta_2D, self.nu[0:3], d_q, ssa(psi_q), d_c_w, d_c_e),
                               axis=None).astype(np.float32)
 
     def crashed(self) -> bool:
