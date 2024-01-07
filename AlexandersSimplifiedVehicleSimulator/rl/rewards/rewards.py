@@ -125,9 +125,9 @@ def r_come_closer(obs, prev_obs):
     difference = r_euclidean(obs) - r_euclidean(prev_obs)
     if np.linalg.norm(obs[0:2], 2) <= 5:
         r = (r_quay(obs) - r_quay(prev_obs))
-    elif abs(r_euclidean(obs) - r_euclidean(prev_obs)) > 0:
-        sign = np.sign(difference)
-        r = sign * min(12.86**2, (difference)**2)
+    elif r_euclidean(obs) - r_euclidean(prev_obs) > 0:
+        # sign = np.sign(difference)
+        r = min(12.86**2, (difference)**2)
     return r
 
 
