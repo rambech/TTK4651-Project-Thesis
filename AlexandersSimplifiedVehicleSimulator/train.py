@@ -2,7 +2,7 @@ import os
 import time
 import json
 import numpy as np
-from rl.env import ForwardDockingEnv, DPEnv
+from rl.env import ForwardDockingEnv, DPEnv, SidewaysDockingEnv
 from vehicle import Otter
 from maps import SimpleMap, Target
 from utils import D2R
@@ -22,7 +22,7 @@ timestep_multiplier = 5
 SECONDS = 120
 VEHICLE_FPS = 60
 RL_FPS = 20
-EPISODES = 10000
+EPISODES = 5000
 TIMESTEPS = SECONDS*RL_FPS*EPISODES  # *timestep_multiplier
 print(f"Timesteps: {TIMESTEPS}")
 
@@ -55,6 +55,11 @@ if env_type == "docking":
     eta_init = np.array([0, 0, 0, 0, 0, 0], float)
     env = ForwardDockingEnv(vehicle, map, seed=seed,
                             render_mode=None, FPS=RL_FPS)
+
+if env_type == "sideways":
+    eta_init = np.array([0, 0, 0, 0, 0, 0], float)
+    env = SidewaysDockingEnv(vehicle, map, seed=seed,
+                             render_mode=None, FPS=RL_FPS)
 
 elif env_type == "DP":
     eta_init = np.array([-10, 0, 0, 0, 0, 0], float)

@@ -5,7 +5,7 @@ Main script for running Vehicle simulator
 from stable_baselines3 import PPO, TD3
 import os
 import numpy as np
-from rl.env import ForwardDockingEnv, DPEnv
+from rl.env import ForwardDockingEnv, DPEnv, SidewaysDockingEnv
 from maps import SimpleMap
 from vehicle import Otter
 
@@ -60,6 +60,10 @@ map = SimpleMap()
 if env_type == "docking":
     env = ForwardDockingEnv(vehicle, map, seed=seed, eta_init=eta_init,
                             render_mode="human", FPS=RL_FPS)
+
+if env_type == "sideways":
+    env = SidewaysDockingEnv(vehicle, map, seed=seed,
+                             render_mode="human", FPS=RL_FPS)
 
 elif env_type == "DP":
     env = DPEnv(vehicle, map, seed, eta_init=eta_init, render_mode="human",
