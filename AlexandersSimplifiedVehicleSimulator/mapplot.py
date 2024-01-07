@@ -13,7 +13,10 @@ ax.set_aspect("equal")
 
 pos = (0, 0)
 psi = np.pi/8
-file_name = "docking_scenario"
+target_pos = (0, 15-0.75-0.5)
+target_psi = np.pi/2
+view = "quay"
+file_name = "sideways_target_pose"
 
 
 def otter(pos, psi):
@@ -28,7 +31,20 @@ def otter(pos, psi):
     transform = rotation + translation + ax.transData
     boat.set_transform(transform)
     return boat
-    # ax.add_patch(boat)
+
+
+def ghost(pos, psi):
+    sequence = [[-0.4, 1], [-0.3, 0.8], [-0.3, 0.6], [0.3, 0.6], [0.3, 0.8],
+                [0.4, 1], [0.5, 0.8], [0.5, -0.8],
+                [0.4, -1], [0.3, -0.8], [0.3, -0.6], [-0.3, -0.6], [-0.3, -0.8],
+                [-0.4, -1], [-0.5, -0.8], [-0.5, 0.8]]
+    rotation = Affine2D().rotate(psi)
+    translation = Affine2D().translate(pos[0], pos[1])
+    boat = patches.Polygon(
+        sequence, closed=True, edgecolor='#90552a', facecolor='none', linewidth=1)
+    transform = rotation + translation + ax.transData
+    boat.set_transform(transform)
+    return boat
 
 
 background = patches.Rectangle(
@@ -53,11 +69,19 @@ b = ax.add_patch(bounds)
 asv = ax.add_patch(otter(pos, psi))
 # TODO: Add path by simply making a path and adding boat-patches along it
 
-ax.legend([q, rest, b, otter((0, 0), np.pi/2)], ["Permitted area",
-          "Restricted area", r'$\mathbb{S}_b$', "ASV"])
 
-ax.set(xlim=(-20, 20), ylim=(-20, 20),
-       xlabel='E', ylabel='N')
+if view == "quay":
+    target = ax.add_patch(ghost(target_pos, target_psi))
+    ax.legend([q, rest, ghost((0, 0), np.pi/2)], ["Permitted area",
+                                                  "Restricted area", "Target pose"])
+    ax.set(xlim=(-5, 5), ylim=(11, 15),
+           xlabel='E', ylabel='N')
+elif view == "full":
+    ax.legend([q, rest, b, otter((0, 0), np.pi/2)], ["Permitted area",
+                                                     "Restricted area", r'$\mathbb{S}_b$', "ASV"])
+
+    ax.set(xlim=(-20, 20), ylim=(-20, 20),
+           xlabel='E', ylabel='N')
 
 if False:
     ax.text(13, 5, r'$\mathbb{S}$', fontsize=12)

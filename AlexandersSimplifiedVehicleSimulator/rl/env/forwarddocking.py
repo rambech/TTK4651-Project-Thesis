@@ -224,7 +224,7 @@ class ForwardDockingEnv(Env):
 
             # Give reward if inside area
             print(f"Steps docked: {self.stay_timer}")
-            reward += 10
+            reward += 10 * (self.stay_timer + 1)
         elif port_touch or stb_touch:
             reward += 0.5
         else:
@@ -232,7 +232,7 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             terminated = True
-            lower_reward_limit = 10000
+            lower_reward_limit = 20000
             # Time not spent must be rewarded more than time
             # spent into the quay
             success_time_reward = 20*(self.step_limit - self.step_count)

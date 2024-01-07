@@ -127,7 +127,7 @@ def r_come_closer(obs, prev_obs):
         r = (r_quay(obs) - r_quay(prev_obs))
     elif r_euclidean(obs) - r_euclidean(prev_obs) > 0:
         # sign = np.sign(difference)
-        r = min(12.86**2, (difference)**2)
+        r = min(80, (difference)**2)
     return r
 
 
