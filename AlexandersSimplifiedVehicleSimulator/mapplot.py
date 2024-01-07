@@ -54,7 +54,7 @@ asv = ax.add_patch(otter(pos, psi))
 # TODO: Add path by simply making a path and adding boat-patches along it
 
 ax.legend([q, rest, b, otter((0, 0), np.pi/2)], ["Permitted area",
-          "Restricted area", r'$\mathbb{S}$', "ASV"])
+          "Restricted area", r'$\mathbb{S}_b$', "ASV"])
 
 ax.set(xlim=(-20, 20), ylim=(-20, 20),
        xlabel='E', ylabel='N')
