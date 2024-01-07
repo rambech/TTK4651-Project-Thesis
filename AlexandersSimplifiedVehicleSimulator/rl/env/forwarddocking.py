@@ -148,7 +148,7 @@ class ForwardDockingEnv(Env):
         self.step_count = 0
 
         # Success
-        s_seconds = 2
+        s_seconds = 1
         # Must be overwritten
         self.thres = None             # [m, rad]
         self.stay_time = self.fps*s_seconds  # [step]git
@@ -277,7 +277,7 @@ class ForwardDockingEnv(Env):
                 return True
             elif abs(corner[0]) >= self.eta_max[0] or abs(corner[1]) >= self.eta_max[1]:
                 return True
-            elif dist_corner_quay < 0.01:
+            elif dist_corner_quay < 0.05:
                 # if np.linalg.norm(self.nu[0:3], 2) > 0.514:
                 #     return True
                 self.bump()
@@ -296,7 +296,7 @@ class ForwardDockingEnv(Env):
         # print(f"d_c_fp: {d_c_fp}")
         # print(f"d_c_fs: {d_c_fs}")
 
-        if d_c_fp <= 0.1 and d_c_fs <= 0.1:
+        if d_c_fp <= 0.2 and d_c_fs <= 0.2:
             print("Docked!")
             return True, True
         elif d_c_fp <= 0.1 and d_c_fs > 0.1:
