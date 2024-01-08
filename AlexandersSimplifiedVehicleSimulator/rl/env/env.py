@@ -101,6 +101,7 @@ class Env(gym.Env):
         self.step_count = 0
         self.prev_dist = None
         self.prev_obs = None
+        self.touched_quay = False
 
         observation = self.get_observation()
         info = {}

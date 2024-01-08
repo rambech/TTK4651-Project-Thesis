@@ -12,8 +12,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 # TODO: Add a settings file and put it into model folder
 
 # Training settings
-model_type = "TD3"
-env_type = "docking"
+model_type = "PPO"
+env_type = "sideways"
 random_weather = False
 seed = 1
 threshold = 3
@@ -77,7 +77,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "main 7b0ab9f"
+    "Commit hash": "main f2c0af4"
 }
 
 # Save the dictionary to the file

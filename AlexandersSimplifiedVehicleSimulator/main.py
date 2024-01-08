@@ -38,9 +38,9 @@ from pygame.locals import (
 # 41354.87404895712
 
 # To test RL or not to test RL that is the question
-RL = False
+RL = True
 
-env_type = "docking"
+env_type = "sideways"
 random_weather = False
 seed = 0
 timestep_multiplier = 5
@@ -51,7 +51,7 @@ RL_FPS = 20
 # EPISODES = 10000
 # TIMESTEPS = SECONDS*RL_FPS  # *timestep_multiplier
 eta_init = np.array([-10, 0, 0, 0, 0, 0], float)
-eta_d = np.array([25-0.75-1, 0, 0, 0, 0, 0], float)
+eta_d = np.array([25-0.75-0.504, 0, 0, 0, 0, 0], float)
 
 # Initialize vehicle
 vehicle = Otter(dt=1/VEHICLE_FPS)
@@ -74,8 +74,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-69-a"
-    episode = 1032000/2400
+    folder_name = f"{model_type}-{env_type}-0-a"
+    episode = 10008000/2400
     load_iteration = f"{int(episode*2400)}"  # "12000000"
 
     models_dir = f"models"

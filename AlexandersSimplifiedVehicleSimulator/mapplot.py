@@ -13,10 +13,10 @@ ax.set_aspect("equal")
 
 pos = (0, 0)
 psi = np.pi/8
-target_pos = (0, 15-0.75-0.5)
-target_psi = np.pi/2
+target_pos = (0, 25/2-0.75-1)
+target_psi = 0
 view = "quay"
-file_name = "sideways_target_pose"
+file_name = "forward_target_pose"
 
 
 def otter(pos, psi):
@@ -49,16 +49,16 @@ def ghost(pos, psi):
 
 background = patches.Rectangle(
     (-20, -20), 40, 40, edgecolor='#97d2d4', facecolor='#97d2d4', linewidth=1)
-dock = patches.Rectangle((-20, 20-5-0.75), 40, 0.75+5,
+dock = patches.Rectangle((-20, 20-7.5-0.75), 40, 0.75+5,
                          edgecolor='#808080', facecolor='#e6e6e6', linewidth=1)
-quay = patches.Rectangle((-2.5, 15-0.75), 5, 2,
+quay = patches.Rectangle((-5, 25/2-0.75), 10, 2,
                          edgecolor='#00509e', facecolor='#3e628a', linewidth=1, linestyle="-", alpha=0.3)
-restricted0 = patches.Rectangle((-15, 15-0.75), 12.5, 2,
+restricted0 = patches.Rectangle((-15, 25/2-0.75), 10, 2,
                                 edgecolor='#595959', facecolor='#000000', linewidth=1, linestyle="-", alpha=0.3)
-restricted1 = patches.Rectangle((2.5, 15-0.75), 12.5, 2,
+restricted1 = patches.Rectangle((5, 25/2-0.75), 10, 2,
                                 edgecolor='#595959', facecolor='#000000', linewidth=1, linestyle="-", alpha=0.3)
 bounds = patches.Rectangle(
-    (-15, -15), 30, 30, edgecolor="r", facecolor="none", linewidth=1, linestyle="--")
+    (-15, -25/2), 30, 25, edgecolor="r", facecolor="none", linewidth=1, linestyle="--")
 
 ax.add_patch(background)
 ax.add_patch(dock)
@@ -72,15 +72,15 @@ asv = ax.add_patch(otter(pos, psi))
 
 if view == "quay":
     target = ax.add_patch(ghost(target_pos, target_psi))
-    ax.legend([q, rest, ghost((0, 0), np.pi/2)], ["Permitted area",
-                                                  "Restricted area", "Target pose"])
-    ax.set(xlim=(-5, 5), ylim=(11, 15),
+    ax.legend([q, ghost((0, 0), np.pi/2), b],
+              ["Permitted area", "Target pose", r'$\mathbb{S}_b$'])
+    ax.set(xlim=(-5, 5), ylim=(9, 13),
            xlabel='E', ylabel='N')
 elif view == "full":
     ax.legend([q, rest, b, otter((0, 0), np.pi/2)], ["Permitted area",
                                                      "Restricted area", r'$\mathbb{S}_b$', "ASV"])
 
-    ax.set(xlim=(-20, 20), ylim=(-20, 20),
+    ax.set(xlim=(-20, 20), ylim=(-15, 15),
            xlabel='E', ylabel='N')
 
 if False:

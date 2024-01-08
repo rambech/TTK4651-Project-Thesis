@@ -174,6 +174,7 @@ class ForwardDockingEnv(Env):
     def step(self, action):
         terminated = False
         self.step_count += 1
+        termination_state = "None"
 
         beta_c, V_c = self.current_force()
 
@@ -223,6 +224,7 @@ class ForwardDockingEnv(Env):
             else:
                 self.stay_timer += 1
 
+            self.touched_quay = True
             # Give reward if inside area
             # print(f"Steps docked: {self.stay_timer}")
             reward += 10 * (self.stay_timer + 1)
@@ -233,6 +235,7 @@ class ForwardDockingEnv(Env):
 
         if self.success():
             print("Success!")
+            termination_state = "Success"
             terminated = True
             lower_reward_limit = 10000
             # Time not spent must be rewarded more than time
@@ -241,10 +244,12 @@ class ForwardDockingEnv(Env):
             reward = min(lower_reward_limit, success_time_reward)
 
         if self.time_out():
+            termination_state = "Timeout"
             terminated = True
             reward = -10
 
         if self.crashed():
+            termination_state = "Crashed"
             terminated = True
             reward = -10000
 
@@ -255,7 +260,11 @@ class ForwardDockingEnv(Env):
             self.screen.blit(self.quay.surf, self.quay.rect)
 
         truncated = False
-        info = {}
+        info = {
+            "Termination state": termination_state,
+            "eta": self.eta,
+            "Touched quay": self.touched_quay,
+        }
         return observation, reward, terminated, truncated, info
 
     def get_observation(self):
