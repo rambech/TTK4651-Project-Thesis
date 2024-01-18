@@ -7,19 +7,27 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rc('text.latex', preamble=r'\usepackage{lmodern,amsmath,amsfonts}')
 
-reward_file_name = "forward_reward_plot"
-length_file_name = "forward_length_plot"
+reward_file_name = "sideways_reward_plot"
+length_file_name = "sideways_length_plot"
 
-rewards = ["log_data/reward/PPO-docking-71-a_PPO_1.json", "log_data/reward/PPO-docking-71-b_PPO_1.json",
-           "log_data/reward/PPO-docking-71-c_PPO_1.json", "log_data/reward/TD3-docking-0_TD3_1.json",
-           "log_data/reward/TD3-docking-0-b_TD3_1.json", "log_data/reward/TD3-docking-0-c_TD3_1.json"]
+# rewards = ["log_data/reward/PPO-docking-71-a_PPO_1.json", "log_data/reward/PPO-docking-71-b_PPO_1.json",
+#            "log_data/reward/PPO-docking-71-c_PPO_1.json", "log_data/reward/TD3-docking-0_TD3_1.json",
+#            "log_data/reward/TD3-docking-0-b_TD3_1.json", "log_data/reward/TD3-docking-0-c_TD3_1.json"]
 
-lengths = ["log_data/length/PPO-docking-71-a_PPO_1.json", "log_data/length/PPO-docking-71-b_PPO_1.json",
-           "log_data/length/PPO-docking-71-c_PPO_1.json", "log_data/length/TD3-docking-0_TD3_1.json",
-           "log_data/length/TD3-docking-0-b_TD3_1.json", "log_data/length/TD3-docking-0-c_TD3_1.json"]
+# lengths = ["log_data/length/PPO-docking-71-a_PPO_1.json", "log_data/length/PPO-docking-71-b_PPO_1.json",
+#            "log_data/length/PPO-docking-71-c_PPO_1.json", "log_data/length/TD3-docking-0_TD3_1.json",
+#            "log_data/length/TD3-docking-0-b_TD3_1.json", "log_data/length/TD3-docking-0-c_TD3_1.json"]
 
-colors = ["#282d37", "#2e7578", "#97d2d4", "#90552a", "#f4ac67", "#fdd9b5"]
-labels = ["PPO 1", "PPO 2", "PPO 3", "TD3 1", "TD3 2", "TD3 3"]
+rewards = ["log_data/reward/PPO-sideways-1-a_PPO_1.json", "log_data/reward/PPO-sideways-1-b_PPO_1.json",
+           "log_data/reward/PPO-sideways-1-c_PPO_1.json"]
+
+lengths = ["log_data/length/PPO-sideways-1-a_PPO_1.json",
+           "log_data/length/PPO-sideways-1-b_PPO_1.json", "log_data/length/PPO-sideways-1-c_PPO_1.json"]
+
+
+# , "#90552a", "#f4ac67", "#fdd9b5"]
+colors = ["#282d37", "#2e7578", "#97d2d4"]
+labels = ["PPO 4", "PPO 5", "PPO 6"]  # , "TD3 1", "TD3 2", "TD3 3"]
 
 fig0, ax0 = plt.subplots(figsize=(7, 7))
 

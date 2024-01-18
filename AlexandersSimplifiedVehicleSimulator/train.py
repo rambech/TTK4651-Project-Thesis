@@ -77,7 +77,7 @@ data = {
     "Threshold": threshold,
     "Seed": seed,
     "Initial pose": eta_init.tolist(),
-    "Commit hash": "main f2c0af4"
+    "Commit hash": "main 38c3071"
 }
 
 # Save the dictionary to the file
@@ -96,7 +96,9 @@ env.reset(seed)
 if model_type == "PPO":
     from stable_baselines3 import PPO
 
-    model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    # model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=log_path)
+    path = "models/PPO-docking-71-a/PPO-docking-71-a_18000000_steps.zip"
+    model = PPO.load(path=path, env=env, tensorboard_log=log_path)
 
 if model_type == "TD3":
     from stable_baselines3 import TD3

@@ -14,8 +14,8 @@ from utils import D2R
 
 import pygame
 
-env_type = "docking"
-render_mode = "human"
+env_type = "sideways"
+render_mode = None
 random_weather = False
 seed = 0
 timestep_multiplier = 5
@@ -45,8 +45,8 @@ if env_type == "sideways":
 RL parameters
 """
 model_type = "PPO"
-folder_name = f"{model_type}-{env_type}-71-a"
-episode = 18000000/2400
+folder_name = f"{model_type}-{env_type}-1-b"
+episode = 10392000/2400
 load_iteration = f"{int(episode*2400)}"  # "12000000"
 
 models_dir = f"models"
@@ -65,7 +65,7 @@ elif model_type == "TD3":
 # Data collection
 # ---------------
 test_dir = "test"
-test_name = "forward"
+test_name = "sideways"
 test_path = f"{models_dir}/{test_name}"
 
 if not os.path.exists(test_dir):
@@ -98,7 +98,7 @@ for ep in range(episodes):
         east_pos.append(info["eta"][1])
         psi.append(info["eta"][2])
 
-        if True:  # env_type == "docking":
+        if False:  # env_type == "docking":
             print(f"Observation: \n \
                     delta_x:    {obs[0]} \n \
                     delta_y:    {obs[1]} \n \

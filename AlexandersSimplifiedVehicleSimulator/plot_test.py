@@ -52,7 +52,7 @@ def plot_test(dict):
     psi = np.pi/8
     target_pos = (0, 15-0.75-0.5)
     target_psi = np.pi/2
-    file_name = "forwar-docking path"
+    file_name = "sideways-docking-path"
 
     def otter(pos, psi, alpha):
         sequence = [[-0.4, 1], [-0.3, 0.8], [-0.3, 0.6], [0.3, 0.6], [0.3, 0.8],
@@ -69,16 +69,16 @@ def plot_test(dict):
 
     background = patches.Rectangle(
         (-20, -20), 40, 40, edgecolor='#97d2d4', facecolor='#97d2d4', linewidth=1)
-    dock = patches.Rectangle((-20, 20-5-0.75), 40, 0.75+5,
+    dock = patches.Rectangle((-20, 20-7.5-0.75), 40, 0.75+5,
                              edgecolor='#808080', facecolor='#e6e6e6', linewidth=1)
-    quay = patches.Rectangle((-2.5, 15-0.75), 5, 2,
+    quay = patches.Rectangle((-5, 25/2-0.75), 10, 2,
                              edgecolor='#00509e', facecolor='#3e628a', linewidth=1, linestyle="-", alpha=0.3)
-    restricted0 = patches.Rectangle((-15, 15-0.75), 12.5, 2,
+    restricted0 = patches.Rectangle((-15, 25/2-0.75), 10, 2,
                                     edgecolor='#595959', facecolor='#000000', linewidth=1, linestyle="-", alpha=0.3)
-    restricted1 = patches.Rectangle((2.5, 15-0.75), 12.5, 2,
+    restricted1 = patches.Rectangle((5, 25/2-0.75), 10, 2,
                                     edgecolor='#595959', facecolor='#000000', linewidth=1, linestyle="-", alpha=0.3)
     bounds = patches.Rectangle(
-        (-15, -15), 30, 30, edgecolor="r", facecolor="none", linewidth=1, linestyle="--")
+        (-15, -25/2), 30, 25, edgecolor="r", facecolor="none", linewidth=1, linestyle="--")
 
     ax.add_patch(background)
     ax.add_patch(dock)
@@ -89,22 +89,21 @@ def plot_test(dict):
     # asv = ax.add_patch(otter(pos, psi))
     # TODO: Add path by simply making a path and adding boat-patches along it
 
-    for idx in range(10):
-        north = dict[f"{idx}"]["North pos"]
-        east = dict[f"{idx}"]["East pos"]
-        psi = dict[f"{idx}"]["Psi"]
+    for idx in range(100):
+        if dict[f"{idx}"]["Termination state"] == "Success":
+            north = dict[f"{idx}"]["North pos"]
+            east = dict[f"{idx}"]["East pos"]
+            psi = dict[f"{idx}"]["Psi"]
+            p, = ax.plot(east, north, color="#2e7578")
+            for j in range(len(psi)):
+                if j % 10 == 0:
+                    pos = (east[j], north[j])
+                    ax.add_patch(otter(pos, psi[j], alpha=0.3))
 
-        for j in range(len(psi)):
-            if j % 10 == 0:
-                pos = (east[j], north[j])
-                ax.add_patch(otter(pos, psi[j], alpha=0.3))
+    ax.legend([q, rest, b, otter((0, 0), np.pi/2, 1), p], ["Permitted area",
+                                                           "Restricted area", r'$\mathbb{S}_b$', "ASV", "Path"], loc="upper left")
 
-        ax.plot(east, north, color="#2e7578")
-
-    ax.legend([q, rest, b, otter((0, 0), np.pi/2, 1)], ["Permitted area",
-                                                        "Restricted area", r'$\mathbb{S}_b$', "ASV"])
-
-    ax.set(xlim=(-20, 20), ylim=(-20, 20),
+    ax.set(xlim=(-20, 20), ylim=(-15, 15),
            xlabel='E', ylabel='N')
 
     if False:
@@ -114,5 +113,5 @@ def plot_test(dict):
     plt.show()
 
 
-crunch_numbers(dict)
+# crunch_numbers(dict)
 plot_test(dict)

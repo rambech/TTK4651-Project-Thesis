@@ -162,6 +162,7 @@ class SidewaysDockingEnv(Env):
     def step(self, action):
         terminated = False
         self.step_count += 1
+        termination_state = "None"
 
         beta_c, V_c = self.current_force()
 
@@ -216,6 +217,7 @@ class SidewaysDockingEnv(Env):
 
         if self.success():
             print("Success!")
+            termination_state = "Success"
             terminated = True
             lower_reward_limit = 10000
             # Time not spent must be rewarded more than time
@@ -224,10 +226,12 @@ class SidewaysDockingEnv(Env):
             reward = min(lower_reward_limit, success_time_reward)
 
         if self.time_out():
+            termination_state = "Timeout"
             terminated = True
             reward = -10
 
         if self.crashed():
+            termination_state = "Crashed"
             terminated = True
             reward = -10000
 
@@ -238,7 +242,11 @@ class SidewaysDockingEnv(Env):
             self.screen.blit(self.quay.surf, self.quay.rect)
 
         truncated = False
-        info = {}
+        info = {
+            "Termination state": termination_state,
+            "eta": self.eta,
+            "Touched quay": self.touched_quay,
+        }
         return observation, reward, terminated, truncated, info
 
     def get_observation(self):

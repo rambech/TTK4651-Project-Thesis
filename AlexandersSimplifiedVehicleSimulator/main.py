@@ -40,7 +40,7 @@ from pygame.locals import (
 # To test RL or not to test RL that is the question
 RL = True
 
-env_type = "sideways"
+env_type = "docking"
 random_weather = False
 seed = 0
 timestep_multiplier = 5
@@ -74,8 +74,8 @@ if RL == True:
     RL parameters
     """
     model_type = "PPO"
-    folder_name = f"{model_type}-{env_type}-0-a"
-    episode = 10008000/2400
+    folder_name = f"{model_type}-{env_type}-71-a"
+    episode = 18000000/2400
     load_iteration = f"{int(episode*2400)}"  # "12000000"
 
     models_dir = f"models"
