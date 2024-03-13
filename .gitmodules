@@ -1,0 +1,3 @@
+[submodule "PythonVehicleSimulator"]
+	path = PythonVehicleSimulator
+	url = https://github.com/cybergalactic/PythonVehicleSimulator.git
